@@ -1,5 +1,6 @@
-const Benchmark = require("benchmark");
-const addon = require("./build/Release/addon");
+import Benchmark from "benchmark";
+import Benchmark from "benchmark";
+import addon from "./build/Debug/addon";
 
 const suite = new Benchmark.Suite();
 
