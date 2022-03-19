@@ -1,16 +1,17 @@
 
 
 declare module "build/Debug/addon" {
+  // matches array in C++
   enum Id64ArgKind {
-    LowHighObject = "low-high-object",
-    LowHighArray = "low-high-array",
-    HexString = "hex-string",
-    Base64String = "base64-string",
-    ByteString = "byte-string",
-    TwoNumbers = "two-numbers",
-    Uint32Array = "uint32array",
-    DoubleAsBuffer = "double-as-buffer",
-    BigInt = "bigint",
+    LowHighObject = 0,
+    LowHighArray = 1,
+    HexString = 2,
+    Base64String = 3,
+    ByteString = 4,
+    TwoNumbers = 5,
+    Uint32Array = 6,
+    DoubleAsBuffer = 7,
+    BigInt = 8,
   }
   namespace Id64Arg {
     type LowHighObject = [{ low: number, high: number }];

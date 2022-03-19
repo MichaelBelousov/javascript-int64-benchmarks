@@ -1,7 +1,10 @@
 #include <limits>
+#include <sstream>
+#include <cstdio>
 #include <cstdlib>
 #include <ctime>
 #include <napi.h>
+#include <stdexcept>
 #include <vector>
 #include <unordered_map>
 #include <cstdint>
@@ -18,8 +21,10 @@ using Graph = std::unordered_map<NodeId, Node>;
 struct JsGraph : Napi::ObjectWrap<Graph> {};
 
 Graph buildGraph(size_t size) {
-  Graph result{};
-  result.reserve(size);
+  std::vector<NodeId> nodeList;
+  nodeList.reserve(size);
+  Graph graph{};
+  graph.reserve(size);
 
   std::srand(std::time(nullptr));
 
@@ -34,33 +39,47 @@ Graph buildGraph(size_t size) {
 
   // create nodes
   for (auto i = 0UL; i < size; ++i) {
-
+    const auto id = randomUint64();
+    graph[id] = Node{};
+    nodeList.push_back(id);
   }
 
-  // create edges
-  for (auto i = 0UL; i < size; ++i)
-  for (auto j = 0UL; j < size; ++j)
-  for (const auto& direction : {true, false}) {
-    static_assert(std::numeric_limits<int>::max() == RAND_MAX, "RAND_MAX is not int32_t max");
-    const uint32_t high = std::rand();
-    const uint32_t low = std::rand();
-    const uint64_t value = 
+  // create edges, for now just 1 to 5 random ones
+  for (auto& [nodeId, node] : graph) {
+    constexpr auto minEdgesPerNode = 1;
+    constexpr auto maxEdgesPerNode = 5;
+    constexpr auto edgesRangePerNode = maxEdgesPerNode - minEdgesPerNode;
+    const auto edgeCount = std::rand() % edgesRangePerNode + minEdgesPerNode;
+    node.reserve(edgeCount);
+    for (auto i = 0; i < edgeCount; ++i) {
+      // - 1 to skip over self, no self-directed edges
+      const auto targetIndex = std::rand() % (size - 1);
+      const auto targetId
+        = nodeId == nodeList[targetIndex]
+        ? nodeList[size - 1]
+        : nodeList[targetIndex]
+      ;
+      const auto target = graph[targetId];
+      node.emplace_back(target);
+    }
   }
 
-  return result;
+  return graph;
 }
 
 using Distance = uint32_t;
 
 // raw native implementation, used as a control
 Distance djikstras(const Graph& graph, NodeId start, NodeId end) {
-  std::unordered_map<NodeId, std::optional<NodeId>> predecessors; predecessors.reserve(graph.size());
-  std::unordered_map<NodeId, Distance> distances; distances.reserve(graph.size());
+  std::unordered_map<NodeId, std::optional<NodeId>> predecessors;
+  predecessors.reserve(graph.size());
+  std::unordered_map<NodeId, Distance> distances;
+  distances.reserve(graph.size());
+
   auto queue = std::priority_queue<NodeId>{};
-  constexpr auto INFINITY = std::numeric_limits<NodeId>::max();
+  constexpr auto DJIKSTRA_INT_INFINITY = std::numeric_limits<Distance>::max();
   for (const auto& [nodeId, node] : graph) {
-    distances[nodeId] = INFINITY;
-    predecessors[nodeId] = std::optional;
+    distances[nodeId] = DJIKSTRA_INT_INFINITY;
   }
   return 0;
 }
@@ -68,64 +87,139 @@ Distance djikstras(const Graph& graph, NodeId start, NodeId end) {
 uint32_t lastHighBits = 0U;
 
 namespace Int64Converters {
-  // ({low, high}) => ({low, high})
-  auto lowHighObject(const Napi::Value& jsVal) -> NodeId {
-    const uint32_t low = jsVal.As<Napi::Object>().Get("low").As<Napi::Number>().Uint32Value();
-    const uint32_t high = jsVal.As<Napi::Object>().Get("high").As<Napi::Number>().Uint32Value();
-    const NodeId value = (static_cast<uint64_t>(high) << 32) | low;
-    return value;
-  }
-  // ([low, high]) => [low, high]
-  auto lowHighArray(const Napi::Value& jsVal) -> NodeId {
-    const auto&& array = jsVal.As<Napi::Array>();
-    const uint32_t low = array[0U].As<Napi::Number>().Uint32Value();
-    const uint32_t high = array[1U].As<Napi::Number>().Uint32Value();
-    const NodeId value = (static_cast<uint64_t>(high) << 32) | low;
-    return value;
-  }
-  // ("0x0") => "0x0"
-  auto hexString(const Napi::Value& jsVal) -> NodeId {
-    const std::string&& arg1 = jsVal.As<Napi::String>().Utf8Value();
-    const NodeId value = std::stoull(arg1.data(), nullptr, 16);
-    return value;
-  }
-  // ("AF==") => "AF=="
-  auto base64String(const Napi::Value& jsVal) -> NodeId {
-    //return value;
-  }
-  // ("\u0000\u0001\x00") => "\u0000\u0001\x00"
-  auto byteString(const Napi::Value& jsVal) -> NodeId {
-    const std::string&& arg1 = jsVal.As<Napi::String>().Utf8Value();
-    const NodeId value = *reinterpret_cast<const NodeId*>(arg1.data());
-    return value;
-  }
-  // (low, high) => low; high = native.getLastHighBits()
-  auto twoNumberWithHighBitGetter(const Napi::CallbackInfo& info) -> NodeId {
-    const uint32_t low = info[0].As<Napi::Number>().Uint32Value();
-    const uint32_t high = info[1].As<Napi::Number>().Uint32Value();
-    const NodeId value = (static_cast<uint64_t>(high) << 32) | low;
-    lastHighBits = high;
-    return value;
-  }
-  // (new Uint32Array([0, 0])) => new Uint8Array([0, 0])
-  auto uint32Array(const Napi::CallbackInfo& info) -> NodeId {
-    const uint32_t* arg1 = info[0].As<Napi::TypedArrayOf<uint32_t>>().Data();
-    const NodeId value = *reinterpret_cast<const NodeId*>(arg1);
-    return value;
-  }
-  // (number) => number
-  auto reinterpretDouble(const Napi::CallbackInfo& info) -> NodeId {
-    const double arg1 = info[0].As<Napi::Number>().DoubleValue();
-    const NodeId value = *reinterpret_cast<const NodeId*>(&arg1);
-    return value;
-  }
-  // (bigint) => bigint
-  auto bigInt(const Napi::CallbackInfo& info) -> NodeId {
-    const double arg1 = info[0].As<Napi::Number>().DoubleValue();
-    const NodeId value = *reinterpret_cast<const NodeId*>(&arg1);
-    return value;
-  }
+  enum struct Kind {
+    LowHighObject = 0,
+    LowHighArray = 1,
+    HexString = 2,
+    Base64String = 3,
+    ByteString = 4,
+    TwoNumbers = 5,
+    Uint32Array = 6,
+    DoubleAsBuffer = 7,
+    BigInt = 8,
+  };
+
+  namespace From {
+    // ({low, high}) => ({low, high})
+    auto LowHighObject(const Napi::Value& jsVal, const Napi::Value&) -> NodeId {
+      const uint32_t low = jsVal.As<Napi::Object>().Get("low").As<Napi::Number>().Uint32Value();
+      const uint32_t high = jsVal.As<Napi::Object>().Get("high").As<Napi::Number>().Uint32Value();
+      const NodeId value = (static_cast<uint64_t>(high) << 32) | low;
+      return value;
+    }
+    // ([low, high]) => [low, high]
+    auto LowHighArray(const Napi::Value& jsVal, const Napi::Value&) -> NodeId {
+      const auto&& array = jsVal.As<Napi::Array>();
+      const uint32_t low = array[0U].As<Napi::Number>().Uint32Value();
+      const uint32_t high = array[1U].As<Napi::Number>().Uint32Value();
+      const NodeId value = (static_cast<uint64_t>(high) << 32) | low;
+      return value;
+    }
+    // ("0x0") => "0x0"
+    auto HexString(const Napi::Value& jsVal, const Napi::Value&) -> NodeId {
+      const std::string&& arg1 = jsVal.As<Napi::String>().Utf8Value();
+      const NodeId value = std::stoull(arg1.data(), nullptr, 16);
+      return value;
+    }
+    // ("AF==") => "AF=="
+    auto Base64String(const Napi::Value& jsVal, const Napi::Value&) -> NodeId {
+      //return value;
+    }
+    // ("\u0000\u0001\x00") => "\u0000\u0001\x00"
+    auto ByteString(const Napi::Value& jsVal, const Napi::Value&) -> NodeId {
+      const std::string&& arg1 = jsVal.As<Napi::String>().Utf8Value();
+      const NodeId value = *reinterpret_cast<const NodeId*>(arg1.data());
+      return value;
+    }
+    // (low, high) => low; high = native.getLastHighBits()
+    auto TwoNumbers(const Napi::Value& inLow, const Napi::Value& inHigh) -> NodeId {
+      const uint32_t low = inLow.As<Napi::Number>().Uint32Value();
+      const uint32_t high = inHigh.As<Napi::Number>().Uint32Value();
+      const NodeId value = (static_cast<uint64_t>(high) << 32) | low;
+      lastHighBits = high;
+      return value;
+    }
+    // (new Uint32Array([0, 0])) => new Uint8Array([0, 0])
+    auto Uint32Array(const Napi::Value& jsVal, const Napi::Value&) -> NodeId {
+      const uint32_t* arg1 = jsVal.As<Napi::TypedArrayOf<uint32_t>>().Data();
+      const NodeId value = *reinterpret_cast<const NodeId*>(arg1);
+      return value;
+    }
+    // (number) => number
+    auto DoubleAsBuffer(const Napi::Value& jsVal, const Napi::Value&) -> NodeId {
+      const double arg1 = jsVal.As<Napi::Number>().DoubleValue();
+      const NodeId value = *reinterpret_cast<const NodeId*>(&arg1);
+      return value;
+    }
+    // (bigint) => bigint
+    auto BigInt(const Napi::Value& jsVal, const Napi::Value&) -> NodeId {
+      const uint64_t value = jsVal.As<Napi::BigInt>().Uint64Value(nullptr);
+      return value;
+    }
+  };
+
+  namespace To {
+    // ({low, high}) => ({low, high})
+    auto LowHighObject(Napi::Env env, uint64_t val) -> Napi::Value {
+      Napi::Object jsVal;
+      jsVal["low"] = Napi::Number::New(env, val & 0xffffffffff);
+      jsVal["high"] = Napi::Number::New(env, val >> 32);
+      return jsVal;
+    }
+    // ([low, high]) => [low, high]
+    auto LowHighArray(Napi::Env env, uint64_t val) -> Napi::Value {
+      Napi::Array jsVal;
+      jsVal[0U] = Napi::Number::New(env, val & 0xffffffffff);
+      jsVal[1U] = Napi::Number::New(env, val >> 32);
+      return jsVal;
+    }
+    // ("0x0") => "0x0"
+    auto HexString(Napi::Env env, uint64_t val) -> Napi::Value {
+      std::stringstream buffer;
+      buffer << "0x" << std::ios::hex << val;
+      //std::sprintf("0x%llu")
+      const auto jsVal = Napi::String::New(env, buffer.str());
+      return jsVal;
+    }
+    // ("AF==") => "AF=="
+    auto Base64String(Napi::Env env, uint64_t val) -> Napi::Value {
+      throw std::runtime_error("unimplemented");
+    }
+    // ("\u0000\u0001\x00") => "\u0000\u0001\x00"
+    auto ByteString(Napi::Env env, uint64_t val) -> Napi::Value {
+      const std::string&& arg1 = jsVal.As<Napi::String>().Utf8Value();
+      const NodeId value = *reinterpret_cast<const NodeId*>(arg1.data());
+      return value;
+    }
+    // (low, high) => low; high = native.getLastHighBits()
+    auto TwoNumbers(Napi::Env env, uint64_t val) -> Napi::Value {
+      const uint32_t low = inLow.As<Napi::Number>().Uint32Value();
+      const uint32_t high = inHigh.As<Napi::Number>().Uint32Value();
+      const NodeId value = (static_cast<uint64_t>(high) << 32) | low;
+      lastHighBits = high;
+      return value;
+    }
+    // (new Uint32Array([0, 0])) => new Uint8Array([0, 0])
+    auto Uint32Array(Napi::Env env, uint64_t val) -> Napi::Value {
+      const uint32_t* arg1 = jsVal.As<Napi::TypedArrayOf<uint32_t>>().Data();
+      const NodeId value = *reinterpret_cast<const NodeId*>(arg1);
+      return value;
+    }
+    // (number) => number
+    auto DoubleAsBuffer(Napi::Env env, uint64_t val) -> Napi::Value {
+      const double arg1 = jsVal.As<Napi::Number>().DoubleValue();
+      const NodeId value = *reinterpret_cast<const NodeId*>(&arg1);
+      return value;
+    }
+    // (bigint) => bigint
+    auto BigInt(Napi::Env env, uint64_t val) -> Napi::Value {
+      const uint64_t value = jsVal.As<Napi::BigInt>().Uint64Value(nullptr);
+      return value;
+    }
+  };
 };
+
+Graph moduleGraph;
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
   exports["controlBuildInJs"] = Napi::Function::New(env, [](const Napi::CallbackInfo& info) -> Napi::Value {
@@ -134,16 +228,53 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     return info.Env().Undefined();
   });
   exports["controlBuildInNative"] = Napi::Function::New(env, [](const Napi::CallbackInfo& info) -> Napi::Value {
-    auto graph = buildGraph();
-    djikstras(graph, 0, 100);
+    moduleGraph = buildGraph(10000);
+    djikstras(moduleGraph , 0, 100);
     return info.Env().Undefined();
   });
   exports["getLastHighBits"] = Napi::Function::New(env, [](const Napi::CallbackInfo& info) -> Napi::Value {
     return Napi::Number::New(info.Env(), lastHighBits);
-    return info.Env().Undefined();
   });
   exports["getNeighbors"] = Napi::Function::New(env, [](const Napi::CallbackInfo& info) -> Napi::Value {
-    return Napi::Number::New(info.Env(), lastHighBits);
+    const auto kind = static_cast<Int64Converters::Kind>(info[0].As<Napi::Number>().Uint32Value());
+    auto result = Napi::Array::New(info.Env());
+    auto i = 0U;
+    const auto getter
+      = kind == Int64Converters::Kind::LowHighObject  ? Int64Converters::From::LowHighObject  
+      : kind == Int64Converters::Kind::LowHighArray   ? Int64Converters::From::LowHighArray   
+      : kind == Int64Converters::Kind::LowHighArray   ? Int64Converters::From::LowHighArray   
+      : kind == Int64Converters::Kind::HexString      ? Int64Converters::From::HexString      
+      : kind == Int64Converters::Kind::Base64String   ? Int64Converters::From::Base64String   
+      : kind == Int64Converters::Kind::ByteString     ? Int64Converters::From::ByteString     
+      : kind == Int64Converters::Kind::TwoNumbers     ? Int64Converters::From::TwoNumbers     
+      : kind == Int64Converters::Kind::Uint32Array    ? Int64Converters::From::Uint32Array    
+      : kind == Int64Converters::Kind::DoubleAsBuffer ? Int64Converters::From::DoubleAsBuffer 
+      /*kind == Int64Converters::Kind::BigInt*/       : Int64Converters::From::BigInt
+    ;
+
+    const auto setter
+      = kind == Int64Converters::Kind::LowHighObject  ? Int64Converters::To::LowHighObject  
+      : kind == Int64Converters::Kind::LowHighArray   ? Int64Converters::To::LowHighArray   
+      : kind == Int64Converters::Kind::LowHighArray   ? Int64Converters::To::LowHighArray   
+      : kind == Int64Converters::Kind::HexString      ? Int64Converters::To::HexString      
+      : kind == Int64Converters::Kind::Base64String   ? Int64Converters::To::Base64String   
+      : kind == Int64Converters::Kind::ByteString     ? Int64Converters::To::ByteString     
+      : kind == Int64Converters::Kind::TwoNumbers     ? Int64Converters::To::TwoNumbers     
+      : kind == Int64Converters::Kind::Uint32Array    ? Int64Converters::To::Uint32Array    
+      : kind == Int64Converters::Kind::DoubleAsBuffer ? Int64Converters::To::DoubleAsBuffer 
+      /*kind == Int64Converters::Kind::BigInt*/       : Int64Converters::To::BigInt
+    ;
+    
+    const auto nodeId = getter(
+      info[0],
+      info.Length() == 3 ? info[1] :  info.Env().Undefined()
+    );
+    const auto node = moduleGraph[nodeId];
+    for (const auto& neighborId : node) {
+      // this doesn't work for high bits...
+      result[i] = setter(info.Env(), neighborId);
+      ++i;
+    }
     return info.Env().Undefined();
   });
   return exports;
