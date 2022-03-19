@@ -1,0 +1,11 @@
+# node
+node_modules
+
+# node native
+build
+
+# vim
+.*.sw[opqr]
+
+# clangd
+compile_commands.json

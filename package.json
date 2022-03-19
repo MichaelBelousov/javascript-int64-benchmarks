@@ -1,0 +1,20 @@
+{
+  "name": "javascript-int64-benchmarks",
+  "version": "1.0.0",
+  "description": "benchmark interoping with native int64 types by various methods in node.js javascript",
+  "main": "index.js",
+  "scripts": {
+    "build": "node-gyp rebuild",
+    "build:dev": "bear --append -- node-gyp rebuild --debug",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Mike Belousov",
+  "license": "MIT",
+  "dependencies": {
+    "benchmark": "^2.1.4"
+  },
+  "devDependencies": {
+    "node-addon-api": "^4.3.0",
+    "node-gyp": "^9.0.0"
+  }
+}
