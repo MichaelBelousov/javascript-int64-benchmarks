@@ -235,6 +235,11 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   exports["getLastHighBits"] = Napi::Function::New(env, [](const Napi::CallbackInfo& info) -> Napi::Value {
     return Napi::Number::New(info.Env(), lastHighBits);
   });
+  exports["doubleAsBufferWhenNanEqFallback"] = Napi::Function::New(env, [](const Napi::CallbackInfo& info) -> Napi::Value {
+    const auto l = info[0].As<Napi::Number>().DoubleValue();
+    const auto r = info[1].As<Napi::Number>().DoubleValue();
+    return Napi::Boolean::New(info.Env(), l == r);
+  });
   exports["getNeighbors"] = Napi::Function::New(env, [](const Napi::CallbackInfo& info) -> Napi::Value {
     const auto kind = static_cast<Int64Converters::Kind>(info[0].As<Napi::Number>().Uint32Value());
     auto result = Napi::Array::New(info.Env());
