@@ -94,4 +94,3 @@ export function eq(...[kind, l, r, r1, r2]:
 }
 
 export declare function getLastHighBits(): number;
-

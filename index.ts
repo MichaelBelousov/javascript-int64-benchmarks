@@ -14,6 +14,8 @@ suite
   })
   .add("store u64 directly in number", function() {
   })
+  .add("store u64 directly in number, native equality fallback only", function() {
+  })
   .on("cycle", function(event: Benchmark.Event) {
     console.log(`${event.target}`);
   })

@@ -59,8 +59,7 @@ Graph buildGraph(size_t size) {
         ? nodeList[size - 1]
         : nodeList[targetIndex]
       ;
-      const auto target = graph[targetId];
-      node.emplace_back(target);
+      node.emplace_back(targetId);
     }
   }
 
@@ -123,7 +122,7 @@ namespace Int64Converters {
     }
     // ("AF==") => "AF=="
     auto Base64String(const Napi::Value& jsVal, const Napi::Value&) -> NodeId {
-      //return value;
+      throw std::runtime_error("unimplemented");
     }
     // ("\u0000\u0001\x00") => "\u0000\u0001\x00"
     auto ByteString(const Napi::Value& jsVal, const Napi::Value&) -> NodeId {
@@ -187,34 +186,35 @@ namespace Int64Converters {
     }
     // ("\u0000\u0001\x00") => "\u0000\u0001\x00"
     auto ByteString(Napi::Env env, uint64_t val) -> Napi::Value {
-      const std::string&& arg1 = jsVal.As<Napi::String>().Utf8Value();
-      const NodeId value = *reinterpret_cast<const NodeId*>(arg1.data());
-      return value;
+      const auto jsVal = Napi::String::New(env, reinterpret_cast<char*>(val), 8);
+      return jsVal;
     }
     // (low, high) => low; high = native.getLastHighBits()
     auto TwoNumbers(Napi::Env env, uint64_t val) -> Napi::Value {
-      const uint32_t low = inLow.As<Napi::Number>().Uint32Value();
-      const uint32_t high = inHigh.As<Napi::Number>().Uint32Value();
-      const NodeId value = (static_cast<uint64_t>(high) << 32) | low;
+      const uint32_t low = val & 0xffffffff;
+      const uint32_t high = val >> 32;
+      const auto jsVal = Napi::Number::New(env, low);
       lastHighBits = high;
-      return value;
+      return jsVal;
     }
     // (new Uint32Array([0, 0])) => new Uint8Array([0, 0])
     auto Uint32Array(Napi::Env env, uint64_t val) -> Napi::Value {
-      const uint32_t* arg1 = jsVal.As<Napi::TypedArrayOf<uint32_t>>().Data();
-      const NodeId value = *reinterpret_cast<const NodeId*>(arg1);
-      return value;
+      const uint32_t low = val & 0xffffffff;
+      const uint32_t high = val >> 32;
+      auto jsVal = Napi::TypedArrayOf<uint32_t>::New(env, sizeof(val) / sizeof(uint32_t));
+      jsVal[0] = low;
+      jsVal[1] = high;
+      return jsVal;
     }
     // (number) => number
     auto DoubleAsBuffer(Napi::Env env, uint64_t val) -> Napi::Value {
-      const double arg1 = jsVal.As<Napi::Number>().DoubleValue();
-      const NodeId value = *reinterpret_cast<const NodeId*>(&arg1);
-      return value;
+      const auto jsVal = Napi::Number::New(env, reinterpret_cast<double&>(val));
+      return jsVal;
     }
     // (bigint) => bigint
     auto BigInt(Napi::Env env, uint64_t val) -> Napi::Value {
-      const uint64_t value = jsVal.As<Napi::BigInt>().Uint64Value(nullptr);
-      return value;
+      const auto jsVal = Napi::BigInt::New(env, val);
+      return jsVal;
     }
   };
 };
@@ -275,13 +275,21 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
       info.Length() == 3 ? info[1] :  info.Env().Undefined()
     );
     const auto node = moduleGraph[nodeId];
+
+    auto highBits = Napi::Array::New(info.Env());
+    if (kind == Int64Converters::Kind::TwoNumbers) {
+      result.Set("highBits", highBits);
+    }
+
     for (const auto& neighborId : node) {
-      // this doesn't work for high bits...
       result[i] = setter(info.Env(), neighborId);
+      if (kind == Int64Converters::Kind::TwoNumbers) highBits[i] = neighborId >> 32;
       ++i;
     }
-    return info.Env().Undefined();
+
+    return result;
   });
+
   return exports;
 }
 
