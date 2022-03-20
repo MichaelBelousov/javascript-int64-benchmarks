@@ -68,6 +68,12 @@ Graph buildGraph(size_t size) {
 
 using Distance = uint32_t;
 
+template<typename... T>
+struct priority_queue : std::priority_queue<T...> {
+  using std::priority_queue<T...>::priority_queue;
+  typename std::priority_queue<T...>::container_type& container() { return this->c; }
+};
+
 // raw native implementation, used as a control
 Distance djikstras(const Graph& graph, NodeId start, NodeId end) {
   std::unordered_map<NodeId, std::optional<NodeId>> predecessors;
@@ -75,11 +81,29 @@ Distance djikstras(const Graph& graph, NodeId start, NodeId end) {
   std::unordered_map<NodeId, Distance> distances;
   distances.reserve(graph.size());
 
-  auto queue = std::priority_queue<NodeId>{};
+  auto nodeDistanceCmp = [&](const NodeId& l, const NodeId& r) {
+    return distances[l] < distances[r];
+  };
+
+  auto queue = priority_queue<
+    NodeId,
+    std::vector<NodeId>,
+    decltype(nodeDistanceCmp)
+  >(nodeDistanceCmp);
+
+  queue.container().reserve(graph.size());
+
   constexpr auto DJIKSTRA_INT_INFINITY = std::numeric_limits<Distance>::max();
   for (const auto& [nodeId, node] : graph) {
     distances[nodeId] = DJIKSTRA_INT_INFINITY;
+    queue.push(nodeId);
   }
+  distances[start] = 0;
+
+  while (!queue.empty()) {
+    const auto u = queue.pop();
+  }
+
   return 0;
 }
 
