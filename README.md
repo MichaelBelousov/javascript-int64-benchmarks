@@ -20,4 +20,18 @@ Goals are:
 Last generated on my 6-core i7-8850H@2.60GHz
 
 ```results
+
+> javascript-int64-benchmarks@1.0.0 start
+> ts-node index.ts
+
+use low/high object {low: u32, high: u32} x 20.96 ops/sec ±5.19% (40 runs sampled)
+use low/high array [u32, u32] x 25.79 ops/sec ±2.36% (47 runs sampled)
+use hex string: '0xff' x 27.28 ops/sec ±1.79% (49 runs sampled)
+use byte string: '\u{0001}\x00\x00\x42' x 80.28 ops/sec ±0.79% (69 runs sampled)
+use two number arguments everywhere x 30.79 ops/sec ±2.15% (55 runs sampled)
+use Uint32Array x 20.21 ops/sec ±2.58% (38 runs sampled)
+use 64-bit number as an 8-byte buffer: 
+fastest was: use byte string: '\u{0001}\x00\x00\x42'
+
 ```
+

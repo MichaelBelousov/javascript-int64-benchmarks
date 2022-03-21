@@ -10,7 +10,8 @@
     "native-debug": "cgdb node -ex 'run node_modules/ts-node/dist/bin.js index.ts'",
     "native-debug:cgdb": "cgdb node -ex 'run node_modules/ts-node/dist/bin.js index.ts'",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "update-readme": "( sed '/```results/q' README.md; npm start; echo '\n```\n' ) | sponge README.md"
   },
   "author": "Mike Belousov",
   "license": "MIT",
