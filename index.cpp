@@ -210,14 +210,14 @@ namespace Int64Converters {
   namespace To {
     // ({low, high}) => ({low, high})
     auto LowHighObject(Napi::Env env, uint64_t val) -> Napi::Value {
-      Napi::Object jsVal;
+      auto jsVal = Napi::Object::New(env);
       jsVal["low"] = Napi::Number::New(env, val & 0xffffffffff);
       jsVal["high"] = Napi::Number::New(env, val >> 32);
       return jsVal;
     }
     // ([low, high]) => [low, high]
     auto LowHighArray(Napi::Env env, uint64_t val) -> Napi::Value {
-      Napi::Array jsVal;
+      auto jsVal = Napi::Array::New(env);
       jsVal[0U] = Napi::Number::New(env, val & 0xffffffffff);
       jsVal[1U] = Napi::Number::New(env, val >> 32);
       return jsVal;
@@ -327,10 +327,7 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     };
     const auto& setter = setters[static_cast<size_t>(kind)];
 
-    const auto nodeId = getter(
-      info[0],
-      info.Length() == 3 ? info[1] : info.Env().Undefined()
-    );
+    const auto nodeId = getter(info[1], info[2]);
     const auto node = moduleGraph[nodeId];
 
     auto highBits = Napi::Array::New(info.Env());
