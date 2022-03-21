@@ -300,6 +300,36 @@ namespace Int64Converters {
   };
 };
 
+struct DoubleAsBufferMap : Napi::ObjectWrap<DoubleAsBufferMap> {
+  std::unordered_map<NodeId, Napi::Reference<Napi::Value>> _map;
+  static Napi::FunctionReference& Constructor;
+  static Napi::Value Init(Napi::Env env, Napi::Object exports) {
+    Napi::Function wrappedCtor = DefineClass(env, "NativeObj", {
+        InstanceMethod<&DoubleAsBufferMap::Get>("get"),
+        InstanceMethod<&DoubleAsBufferMap::Set>("set"),
+    });
+    Constructor = Napi::Persistent(wrappedCtor);
+    Constructor.SuppressDestruct();
+    exports["DoubleAsBufferMap"] = wrappedCtor;
+  }
+  DoubleAsBufferMap(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DoubleAsBufferMap>{info}, _map{} {}
+  ~DoubleAsBufferMap() {
+    for (auto& [id, jsRef] : _map) { jsRef.Unref(); }
+  }
+  Napi::Value Get(const Napi::CallbackInfo& info) {
+    const auto&& key = Int64Converters::From::DoubleAsBuffer(info[0].As<Napi::Number>(), info.Env().Undefined());
+    auto&& entry = _map.find(key);
+    if (entry == _map.end()) return info.Env().Undefined();
+    return entry->second.Value();
+  }
+  Napi::Value Set(const Napi::CallbackInfo& info) {
+    const auto&& key = Int64Converters::From::DoubleAsBuffer(info[0].As<Napi::Number>(), info.Env().Undefined());
+    auto val = Napi::Reference<Napi::Value>::New(info[1], 1);
+    _map[key] = std::move(val); // FIXME: wut
+    return info.Env().Undefined();
+  }
+};
+
 Graph moduleGraph;
 NodeId moduleStart;
 NodeId moduleEnd;
@@ -372,6 +402,8 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
 
     return result;
   });
+
+  DoubleAsBufferMap::Init(env, exports);
 
   return exports;
 }

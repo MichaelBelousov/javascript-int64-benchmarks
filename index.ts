@@ -1,5 +1,5 @@
 import * as Benchmark from "benchmark";
-import { Id64ArgKind, Id64Arg, getNeighbors, Id64Args, getNodes, MaybeHighBitArray, IdArgsFor } from "./addon";
+import { Id64ArgKind, Id64Arg, getNeighbors, Id64Args, getNodes, MaybeHighBitArray, IdArgsFor, nativeDjikstras } from "./addon";
 //import Heap from "heap";
 const Heap = require("heap"); // wasn't working for some reason
 import { MakeIdMapClass, MakeIdSetClass } from "./Id64Containers";
@@ -91,6 +91,9 @@ suite
   .add("use Uint32Array", function() {
     djikstras(Id64ArgKind.Uint32Array);
   })
+  .add("do it all in native (control)", function() {
+    nativeDjikstras();
+  })
   .add("use 64-bit number as an 8-byte buffer", function() {
     djikstras(Id64ArgKind.DoubleAsBuffer);
   })
@@ -101,7 +104,10 @@ suite
     else console.log(`${event.target}`);
   })
   .on("complete", function(this: Benchmark.Suite) {
-    const [fastest] = this.filter('fastest').map((b: Benchmark) => b.name) as string[];
+    const [fastest]: string[] = this
+      .filter('fastest')
+      .filter((b: Benchmark) => !/\(control\)$/.test(b.name))
+      .map((b: Benchmark) => b.name);
     console.log(`fastest was: ${fastest}`);
   })
   .on("error", function(this: Benchmark.Suite) {
