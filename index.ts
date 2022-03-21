@@ -76,11 +76,12 @@ suite
   .add("use hex string: '0xff'", function() {
     djikstras(Id64ArgKind.HexString);
   })
+  // not implemented
   //.add("use unprefixed hex string: 'ff'", function() {})
   //.add("use prefixed hex string with fast parse routine: '0xff'", function() { })
-  .add("use base64 string: 'bXd='", function() {
-    djikstras(Id64ArgKind.Base64String);
-  })
+  //.add("use base64 string: 'bXd='", function() {
+  //  djikstras(Id64ArgKind.Base64String);
+  //})
   .add("use byte string: '\\u{0001}\\x00\\x00\\x42'", function() {
     djikstras(Id64ArgKind.ByteString);
   })

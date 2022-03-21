@@ -15,6 +15,10 @@
 #include <cmath>
 #include <ctime>
 
+
+constexpr size_t GRAPH_SIZE = 2000;
+constexpr size_t EDGES_PER_NODE = 8;
+
 using NodeId = uint64_t;
 using Node = std::vector<NodeId>;
 using Graph = std::unordered_map<NodeId, Node>;
@@ -55,12 +59,8 @@ BuildGraphResult buildGraph(size_t size) {
 
   // create edges, for now just 1 to 5 random ones
   for (auto& [nodeId, node] : result.graph) {
-    constexpr auto minEdgesPerNode = 1;
-    constexpr auto maxEdgesPerNode = 5;
-    constexpr auto edgesRangePerNode = maxEdgesPerNode - minEdgesPerNode;
-    const auto edgeCount = std::rand() % edgesRangePerNode + minEdgesPerNode;
-    node.reserve(edgeCount);
-    for (auto i = 0; i < edgeCount; ++i) {
+    node.reserve(EDGES_PER_NODE);
+    for (auto i = 0U; i < EDGES_PER_NODE; ++i) {
       // - 1 to skip over self, no self-directed edges
       const auto targetIndex = std::rand() % (size - 1);
       const auto targetId
@@ -120,8 +120,8 @@ Distance djikstras(const Graph& graph, NodeId start, NodeId end) {
     for (const auto& neighbor : neighbors) {
       const auto stillInQueue = inQueue.find(neighbor) != inQueue.end();
       if (!stillInQueue) continue;
-      constexpr auto edgeSize = 1;
-      const auto alt = distances[u] + edgeSize;
+      constexpr auto edgeLength = 1;
+      const auto alt = distances[u] + edgeLength;
       if (alt < distances[neighbor]) {
         distances[neighbor] = alt;
         predecessors[neighbor] = u;
@@ -205,6 +205,18 @@ namespace Int64Converters {
       const uint64_t value = jsVal.As<Napi::BigInt>().Uint64Value(nullptr);
       return value;
     }
+
+    static decltype(LowHighObject)* map[] = {
+      LowHighObject,
+      LowHighArray,
+      HexString,
+      Base64String,
+      ByteString,
+      TwoNumbers,
+      Uint32Array,
+      DoubleAsBuffer,
+      BigInt,
+    };
   };
 
   namespace To {
@@ -225,8 +237,8 @@ namespace Int64Converters {
     // ("0x0") => "0x0"
     auto HexString(Napi::Env env, uint64_t val) -> Napi::Value {
       std::stringstream buffer;
-      buffer << "0x" << std::ios::hex << val;
-      //std::sprintf("0x%llu")
+      std::hex(buffer); // maybe sprintf is faster?
+      buffer << "0x" << val;
       const auto jsVal = Napi::String::New(env, buffer.str());
       return jsVal;
     }
@@ -266,6 +278,19 @@ namespace Int64Converters {
       const auto jsVal = Napi::BigInt::New(env, val);
       return jsVal;
     }
+
+    // must be same order as enum
+    static decltype(LowHighObject)* map[] = {
+      LowHighObject,
+      LowHighArray,
+      HexString,
+      Base64String,
+      ByteString,
+      TwoNumbers,
+      Uint32Array,
+      DoubleAsBuffer,
+      BigInt,
+    };
   };
 };
 
@@ -274,7 +299,7 @@ NodeId moduleStart;
 NodeId moduleEnd;
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
-  auto&& moduleGraphResult = buildGraph(50000);
+  auto&& moduleGraphResult = buildGraph(GRAPH_SIZE);
   moduleGraph = std::move(moduleGraphResult.graph);
   moduleStart = moduleGraphResult.first;
   moduleEnd = moduleGraphResult.last;
@@ -301,31 +326,8 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     auto result = Napi::Array::New(info.Env());
     auto i = 0U;
 
-    static decltype(Int64Converters::From::LowHighObject)* getters[] = {
-      Int64Converters::From::LowHighObject,
-      Int64Converters::From::LowHighArray,
-      Int64Converters::From::LowHighArray,
-      Int64Converters::From::HexString,
-      Int64Converters::From::Base64String,
-      Int64Converters::From::ByteString,
-      Int64Converters::From::TwoNumbers,
-      Int64Converters::From::Uint32Array,
-      Int64Converters::From::DoubleAsBuffer,
-    };
-    const auto& getter = getters[static_cast<size_t>(kind)];
-
-    static decltype(Int64Converters::To::LowHighObject)* setters[] = {
-      Int64Converters::To::LowHighObject,
-      Int64Converters::To::LowHighArray,
-      Int64Converters::To::LowHighArray,
-      Int64Converters::To::HexString,
-      Int64Converters::To::Base64String,
-      Int64Converters::To::ByteString,
-      Int64Converters::To::TwoNumbers,
-      Int64Converters::To::Uint32Array,
-      Int64Converters::To::DoubleAsBuffer,
-    };
-    const auto& setter = setters[static_cast<size_t>(kind)];
+    const auto& getter = Int64Converters::From::map[static_cast<size_t>(kind)];
+    const auto& setter = Int64Converters::To::map[static_cast<size_t>(kind)];
 
     const auto nodeId = getter(info[1], info[2]);
     const auto node = moduleGraph[nodeId];
@@ -349,19 +351,7 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     auto result = Napi::Array::New(info.Env());
     auto i = 0U;
 
-    // TODO: dedup from equivalent in getNeighbors
-    static decltype(Int64Converters::To::LowHighObject)* setters[] = {
-      Int64Converters::To::LowHighObject,
-      Int64Converters::To::LowHighArray,
-      Int64Converters::To::LowHighArray,
-      Int64Converters::To::HexString,
-      Int64Converters::To::Base64String,
-      Int64Converters::To::ByteString,
-      Int64Converters::To::TwoNumbers,
-      Int64Converters::To::Uint32Array,
-      Int64Converters::To::DoubleAsBuffer,
-    };
-    const auto& setter = setters[static_cast<size_t>(kind)];
+    const auto& setter = Int64Converters::To::map[static_cast<size_t>(kind)];
 
     auto highBits = Napi::Array::New(info.Env());
     if (kind == Int64Converters::Kind::TwoNumbers) {
