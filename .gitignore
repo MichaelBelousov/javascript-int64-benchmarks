@@ -12,3 +12,6 @@ compile_commands.json
 
 # ts-node
 .ts-node
+
+# gdb
+.gdb_history

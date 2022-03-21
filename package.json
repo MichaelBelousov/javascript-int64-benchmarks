@@ -7,6 +7,8 @@
     "start": "ts-node index.ts",
     "build": "node-gyp rebuild",
     "build:dev": "bear --append -- node-gyp rebuild --debug",
+    "native-debug": "cgdb node -ex 'run node_modules/ts-node/dist/bin.js index.ts'",
+    "native-debug:cgdb": "cgdb node -ex 'run node_modules/ts-node/dist/bin.js index.ts'",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
