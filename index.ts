@@ -1,36 +1,42 @@
 import * as Benchmark from "benchmark";
-import { Id64ArgKind } from "./addon";
+import { Id64ArgKind, Id64, getNeighbors } from "./addon";
+import Heap from "heap";
+import { MakeIdMapClass } from "./Id64Containers";
 
 const suite = new Benchmark.Suite();
 
-function randUint32() {
-  const MAX_UINT32 = 2**32 - 1;
-  return Math.floor(Math.random() * MAX_UINT32);
-}
-
-// generating the graph in javascript is interesting but afaik not comparable
-// to C++, the random generation is probably pretty non-comparable
-function randId64(kind: Id64ArgKind) {
-  switch (kind) {
-    case Id64ArgKind.LowHighObject: return { low: randUint32(), high: randUint32() };
-    case Id64ArgKind.LowHighArray:
-      return [randUint32(), randUint32()];
-    case Id64ArgKind.HexString:
-      return `0x${randUint32().toString(16)}${randUint32().toString(16).padStart(8, '0')}`
-    case Id64ArgKind.Base64String:
-      return Buffer.from(new Uint32Array([randUint32(), randUint32()])).toString("base64");
-    case Id64ArgKind.ByteString:
-    default:
-      return Math.random();
+function djikstras<Kind extends Id64ArgKind, Type extends Id64>(kind: Kind, start: Type) {
+  const predecessors = new (MakeIdMapClass<Id64>(kind))();
+  const distances = new (MakeIdMapClass<Kind>(kind))();
+  // FIXME: need to write a custom priority queue where we pass numbers by param...
+  function nodeDistanceCmp(l: Type, r: Type): number {
+    return (distances as any).get(l)! - (distances as any).get(r)!;
   }
-}
+  const queue = new Heap(nodeDistanceCmp);
+  // TODO: need a custom set type
+  const inQueue = new Set<Type>();
 
-function buildGraph() {
-  const uint32 = Math.random() * 2**32
-}
+  for (const nodeId of getNodes()) {
+    distances.set(nodeId, Number.POSITIVE_INFINITY);
+    queue.push(nodeId)
+    inQueue.add(nodeId);
+  }
+  distances.set(start, 0);
 
-function djikstras() {
-
+  while(!queue.empty()) {
+    const u = queue.pop();
+    const neighbors = getNeighbors(u);
+    for (const neighbor of neighbors) {
+      const stillInQueue = inQueue.has(neighbor);
+      if (!stillInQueue) continue;
+      const edgeSize = 1;
+      const alt = distances.get(u) + 1;
+      if (alt < distances.get(neighbor)) {
+        distances.set(neighbor, alt);
+        predecessors.set(neighbor, u);
+      }
+    }
+  }
 }
 
 suite

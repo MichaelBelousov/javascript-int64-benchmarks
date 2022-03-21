@@ -100,6 +100,7 @@ Distance djikstras(const Graph& graph, NodeId start, NodeId end) {
   for (const auto& [nodeId, node] : graph) {
     distances[nodeId] = DJIKSTRA_INT_INFINITY;
     queue.push(nodeId);
+    inQueue.insert(nodeId);
   }
   distances[start] = 0;
 
@@ -120,7 +121,8 @@ Distance djikstras(const Graph& graph, NodeId start, NodeId end) {
     }
   }
 
-  return 0;
+  // can actually terminate early but we build the whole tree
+  return distances[end];
 }
 
 uint32_t lastHighBits = 0U;
