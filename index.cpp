@@ -273,7 +273,9 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   exports["doubleAsBufferWhenNanEqFallback"] = Napi::Function::New(env, [](const Napi::CallbackInfo& info) -> Napi::Value {
     const auto l = info[0].As<Napi::Number>().DoubleValue();
     const auto r = info[1].As<Napi::Number>().DoubleValue();
-    return Napi::Boolean::New(info.Env(), l == r);
+    const auto lId = reinterpret_cast<const uint64_t&>(l);
+    const auto rId = reinterpret_cast<const uint64_t&>(r);
+    return Napi::Boolean::New(info.Env(), lId == rId);
   });
 
   exports["getNeighbors"] = Napi::Function::New(env, [](const Napi::CallbackInfo& info) -> Napi::Value {

@@ -1,3 +1,4 @@
+// TODO: rename all Id64 crap to Int64
 import { Id64Arg, Id64ArgKind, Id64Args } from "./addon";
 
 export interface Id64Map<K extends Id64Arg, V> /* extends Pick<Map<K, V>, "get" | "set"> */ {
