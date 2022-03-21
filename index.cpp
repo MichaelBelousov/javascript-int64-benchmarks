@@ -6,6 +6,7 @@
 #include <napi.h>
 #include <stdexcept>
 #include <vector>
+#include <set>
 #include <unordered_map>
 #include <cstdint>
 #include <queue>
@@ -81,7 +82,7 @@ Distance djikstras(const Graph& graph, NodeId start, NodeId end) {
   std::unordered_map<NodeId, Distance> distances;
   distances.reserve(graph.size());
 
-  auto nodeDistanceCmp = [&](const NodeId& l, const NodeId& r) {
+  const auto nodeDistanceCmp = [&](const NodeId& l, const NodeId& r) {
     return distances[l] < distances[r];
   };
 
@@ -90,6 +91,8 @@ Distance djikstras(const Graph& graph, NodeId start, NodeId end) {
     std::vector<NodeId>,
     decltype(nodeDistanceCmp)
   >(nodeDistanceCmp);
+
+  std::set<NodeId> inQueue;
 
   queue.container().reserve(graph.size());
 
@@ -101,7 +104,20 @@ Distance djikstras(const Graph& graph, NodeId start, NodeId end) {
   distances[start] = 0;
 
   while (!queue.empty()) {
-    const auto u = queue.pop();
+    const auto u = queue.top();
+    queue.pop();
+    inQueue.erase(u);
+    const auto neighbors = graph.at(u);
+    for (const auto& neighbor : neighbors) {
+      const auto stillInQueue = inQueue.find(neighbor) != inQueue.end();
+      if (!stillInQueue) continue;
+      constexpr auto edgeSize = 1;
+      const auto alt = distances[u] + edgeSize;
+      if (alt < distances[neighbor]) {
+        distances[neighbor] = alt;
+        predecessors[neighbor] = u;
+      }
+    }
   }
 
   return 0;
@@ -268,35 +284,36 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     const auto kind = static_cast<Int64Converters::Kind>(info[0].As<Napi::Number>().Uint32Value());
     auto result = Napi::Array::New(info.Env());
     auto i = 0U;
-    const auto getter
-      = kind == Int64Converters::Kind::LowHighObject  ? Int64Converters::From::LowHighObject  
-      : kind == Int64Converters::Kind::LowHighArray   ? Int64Converters::From::LowHighArray   
-      : kind == Int64Converters::Kind::LowHighArray   ? Int64Converters::From::LowHighArray   
-      : kind == Int64Converters::Kind::HexString      ? Int64Converters::From::HexString      
-      : kind == Int64Converters::Kind::Base64String   ? Int64Converters::From::Base64String   
-      : kind == Int64Converters::Kind::ByteString     ? Int64Converters::From::ByteString     
-      : kind == Int64Converters::Kind::TwoNumbers     ? Int64Converters::From::TwoNumbers     
-      : kind == Int64Converters::Kind::Uint32Array    ? Int64Converters::From::Uint32Array    
-      : kind == Int64Converters::Kind::DoubleAsBuffer ? Int64Converters::From::DoubleAsBuffer 
-      /*kind == Int64Converters::Kind::BigInt*/       : Int64Converters::From::BigInt
-    ;
 
-    const auto setter
-      = kind == Int64Converters::Kind::LowHighObject  ? Int64Converters::To::LowHighObject  
-      : kind == Int64Converters::Kind::LowHighArray   ? Int64Converters::To::LowHighArray   
-      : kind == Int64Converters::Kind::LowHighArray   ? Int64Converters::To::LowHighArray   
-      : kind == Int64Converters::Kind::HexString      ? Int64Converters::To::HexString      
-      : kind == Int64Converters::Kind::Base64String   ? Int64Converters::To::Base64String   
-      : kind == Int64Converters::Kind::ByteString     ? Int64Converters::To::ByteString     
-      : kind == Int64Converters::Kind::TwoNumbers     ? Int64Converters::To::TwoNumbers     
-      : kind == Int64Converters::Kind::Uint32Array    ? Int64Converters::To::Uint32Array    
-      : kind == Int64Converters::Kind::DoubleAsBuffer ? Int64Converters::To::DoubleAsBuffer 
-      /*kind == Int64Converters::Kind::BigInt*/       : Int64Converters::To::BigInt
-    ;
+    static decltype(Int64Converters::From::LowHighObject)* getters[] = {
+      Int64Converters::From::LowHighObject,
+      Int64Converters::From::LowHighArray,
+      Int64Converters::From::LowHighArray,
+      Int64Converters::From::HexString,
+      Int64Converters::From::Base64String,
+      Int64Converters::From::ByteString,
+      Int64Converters::From::TwoNumbers,
+      Int64Converters::From::Uint32Array,
+      Int64Converters::From::DoubleAsBuffer,
+    };
+    const auto& getter = getters[static_cast<size_t>(kind)];
+
+    static decltype(Int64Converters::To::LowHighObject)* setters[] = {
+      Int64Converters::To::LowHighObject,
+      Int64Converters::To::LowHighArray,
+      Int64Converters::To::LowHighArray,
+      Int64Converters::To::HexString,
+      Int64Converters::To::Base64String,
+      Int64Converters::To::ByteString,
+      Int64Converters::To::TwoNumbers,
+      Int64Converters::To::Uint32Array,
+      Int64Converters::To::DoubleAsBuffer,
+    };
+    const auto& setter = setters[static_cast<size_t>(kind)];
     
     const auto nodeId = getter(
       info[0],
-      info.Length() == 3 ? info[1] :  info.Env().Undefined()
+      info.Length() == 3 ? info[1] : info.Env().Undefined()
     );
     const auto node = moduleGraph[nodeId];
 

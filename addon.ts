@@ -3,7 +3,7 @@ const nativeBindings = require("./build/Debug/addon");
 Object.assign(module, nativeBindings); // well this is kinda weird
 
 // matches array in C++
-enum Id64ArgKind {
+export enum Id64ArgKind {
   LowHighObject = 0,
   LowHighArray = 1,
   HexString = 2,
@@ -16,7 +16,7 @@ enum Id64ArgKind {
   // TODO: BigInt64Array
 }
 
-namespace Id64Arg {
+export namespace Id64Arg {
   export type LowHighObject = [{ low: number, high: number }];
   export type LowHighArray = [[ low: number, high: number ]];
   export type HexString = [string];
