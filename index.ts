@@ -1,39 +1,60 @@
 import * as Benchmark from "benchmark";
-import { Id64ArgKind, Id64, getNeighbors } from "./addon";
+import { Id64ArgKind, Id64Arg, getNeighbors, Id64Args, getNodes, MaybeHighBitArray } from "./addon";
 import Heap from "heap";
-import { MakeIdMapClass } from "./Id64Containers";
+import { MakeIdMapClass, MakeIdSetClass } from "./Id64Containers";
 
 const suite = new Benchmark.Suite();
 
-function djikstras<Kind extends Id64ArgKind, Type extends Id64>(kind: Kind, start: Type) {
-  const predecessors = new (MakeIdMapClass<Id64>(kind))();
+function djikstras(
+  ...[kind, start, startExtra]:
+  | [Id64ArgKind.LowHighObject,  ...Id64Args.LowHighObject]
+  | [Id64ArgKind.LowHighArray,   ...Id64Args.LowHighArray]
+  | [Id64ArgKind.HexString,      ...Id64Args.HexString]
+  | [Id64ArgKind.Base64String,   ...Id64Args.Base64String]
+  | [Id64ArgKind.ByteString,     ...Id64Args.ByteString]
+  | [Id64ArgKind.TwoNumbers,     ...Id64Args.TwoNumbers]
+  | [Id64ArgKind.Uint32Array,    ...Id64Args.Uint32Array]
+  | [Id64ArgKind.DoubleAsBuffer, ...Id64Args.DoubleAsBuffer]
+  | [Id64ArgKind.BigInt,         ...Id64Args.BigInt]
+) {
+  type Kind =  typeof kind;
+  type Type = [typeof start, typeof startExtra];
+  const predecessors = new (MakeIdMapClass<Id64Arg>(kind))();
   const distances = new (MakeIdMapClass<Kind>(kind))();
   // FIXME: need to write a custom priority queue where we pass numbers by param...
   function nodeDistanceCmp(l: Type, r: Type): number {
-    return (distances as any).get(l)! - (distances as any).get(r)!;
+    return (distances as any).get(...l)! - (distances as any).get(...r)!;
   }
   const queue = new Heap(nodeDistanceCmp);
-  // TODO: need a custom set type
-  const inQueue = new Set<Type>();
+  const inQueue = new (MakeIdSetClass<Type>(kind))();
 
-  for (const nodeId of getNodes()) {
-    distances.set(nodeId, Number.POSITIVE_INFINITY);
-    queue.push(nodeId)
-    inQueue.add(nodeId);
+  // FIXME: rid all these anys
+
+  const nodes = getNodes(kind);
+  const maybeHighBits: number[] = (nodes as MaybeHighBitArray<Id64Args.TwoNumbers>).highBits ?? [];
+  for (let i = 0; i < nodes.length; ++i) {
+    const nodeId = nodes[i];
+    const nodeIdExtra = maybeHighBits[i];
+    distances.set(nodeId as any, nodeIdExtra, Number.POSITIVE_INFINITY);
+    queue.push([nodeId as any, nodeIdExtra]);
+    inQueue.add(nodeId as any, nodeIdExtra);
   }
-  distances.set(start, 0);
+  distances.set(start as any, startExtra, 0);
 
   while(!queue.empty()) {
-    const u = queue.pop();
-    const neighbors = getNeighbors(u);
-    for (const neighbor of neighbors) {
-      const stillInQueue = inQueue.has(neighbor);
+    const [u, uExtra] = queue.pop();
+    const neighbors = getNeighbors(kind, u, uExtra);
+    const maybeHighBits: number[] = (neighbors as MaybeHighBitArray<Id64Args.TwoNumbers>).highBits ?? [];
+    for (let i = 0; i < neighbors.length; ++i) {
+      const neighbor = neighbors[i];
+      const neighborExtra = maybeHighBits[i];
+      const stillInQueue = inQueue.has(neighbor, neighborExtra);
       if (!stillInQueue) continue;
       const edgeSize = 1;
-      const alt = distances.get(u) + 1;
-      if (alt < distances.get(neighbor)) {
-        distances.set(neighbor, alt);
-        predecessors.set(neighbor, u);
+      const alt = distances.get(u, uExtra) + 1;
+      if (alt < distances.get(neighbor, neighborExtra)) {
+        distances.set(neighbor, neighborExtra, alt);
+        predecessors.set(neighbor, neighborExtra as any, [u, uExtra] as any);
       }
     }
   }

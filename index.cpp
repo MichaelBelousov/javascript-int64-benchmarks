@@ -264,24 +264,18 @@ namespace Int64Converters {
 Graph moduleGraph;
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
-  exports["controlBuildInJs"] = Napi::Function::New(env, [](const Napi::CallbackInfo& info) -> Napi::Value {
-    //JsGraph graph;
-    //djikstras(Graph);
-    return info.Env().Undefined();
-  });
-  exports["controlBuildInNative"] = Napi::Function::New(env, [](const Napi::CallbackInfo& info) -> Napi::Value {
-    moduleGraph = buildGraph(10000);
-    djikstras(moduleGraph , 0, 100);
-    return info.Env().Undefined();
-  });
+  moduleGraph = buildGraph(50000);
+
   exports["getLastHighBits"] = Napi::Function::New(env, [](const Napi::CallbackInfo& info) -> Napi::Value {
     return Napi::Number::New(info.Env(), lastHighBits);
   });
+
   exports["doubleAsBufferWhenNanEqFallback"] = Napi::Function::New(env, [](const Napi::CallbackInfo& info) -> Napi::Value {
     const auto l = info[0].As<Napi::Number>().DoubleValue();
     const auto r = info[1].As<Napi::Number>().DoubleValue();
     return Napi::Boolean::New(info.Env(), l == r);
   });
+
   exports["getNeighbors"] = Napi::Function::New(env, [](const Napi::CallbackInfo& info) -> Napi::Value {
     const auto kind = static_cast<Int64Converters::Kind>(info[0].As<Napi::Number>().Uint32Value());
     auto result = Napi::Array::New(info.Env());
@@ -312,7 +306,7 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
       Int64Converters::To::DoubleAsBuffer,
     };
     const auto& setter = setters[static_cast<size_t>(kind)];
-    
+
     const auto nodeId = getter(
       info[0],
       info.Length() == 3 ? info[1] : info.Env().Undefined()
@@ -327,6 +321,39 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     for (const auto& neighborId : node) {
       result[i] = setter(info.Env(), neighborId);
       if (kind == Int64Converters::Kind::TwoNumbers) highBits[i] = neighborId >> 32;
+      ++i;
+    }
+
+    return result;
+  });
+
+  exports["getNodes"] = Napi::Function::New(env, [](const Napi::CallbackInfo& info) -> Napi::Value {
+    const auto kind = static_cast<Int64Converters::Kind>(info[0].As<Napi::Number>().Uint32Value());
+    auto result = Napi::Array::New(info.Env());
+    auto i = 0U;
+
+    // TODO: dedup from equivalent in getNeighbors
+    static decltype(Int64Converters::To::LowHighObject)* setters[] = {
+      Int64Converters::To::LowHighObject,
+      Int64Converters::To::LowHighArray,
+      Int64Converters::To::LowHighArray,
+      Int64Converters::To::HexString,
+      Int64Converters::To::Base64String,
+      Int64Converters::To::ByteString,
+      Int64Converters::To::TwoNumbers,
+      Int64Converters::To::Uint32Array,
+      Int64Converters::To::DoubleAsBuffer,
+    };
+    const auto& setter = setters[static_cast<size_t>(kind)];
+
+    auto highBits = Napi::Array::New(info.Env());
+    if (kind == Int64Converters::Kind::TwoNumbers) {
+      result.Set("highBits", highBits);
+    }
+
+    for (const auto& [nodeId, _node] : moduleGraph) {
+      result[i] = setter(info.Env(), nodeId);
+      if (kind == Int64Converters::Kind::TwoNumbers) highBits[i] = nodeId >> 32;
       ++i;
     }
 
