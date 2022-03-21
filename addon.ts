@@ -1,5 +1,4 @@
 const nativeBindings = require("./build/Debug/addon");
-Object.assign(module, nativeBindings); // kinda weird
 
 // matches array in C++
 export enum Id64ArgKind {
@@ -58,31 +57,44 @@ export type MaybeHighBitArray<T> = T extends Id64Args.TwoNumbers
   ? number[] & { highBits: number[] }
   : T[];
 
-export declare function getNeighbors(kind: Id64ArgKind.LowHighObject,  ...id: Id64Args.LowHighObject):  MaybeHighBitArray<Id64Args.LowHighObject>;
-export declare function getNeighbors(kind: Id64ArgKind.LowHighArray,   ...id: Id64Args.LowHighArray):   MaybeHighBitArray<Id64Args.LowHighArray>;
-export declare function getNeighbors(kind: Id64ArgKind.HexString,      ...id: Id64Args.HexString):      MaybeHighBitArray<Id64Args.HexString>;
-export declare function getNeighbors(kind: Id64ArgKind.Base64String,   ...id: Id64Args.Base64String):   MaybeHighBitArray<Id64Args.Base64String>;
-export declare function getNeighbors(kind: Id64ArgKind.ByteString,     ...id: Id64Args.ByteString):     MaybeHighBitArray<Id64Args.ByteString>;
-export declare function getNeighbors(kind: Id64ArgKind.TwoNumbers,     ...id: Id64Args.TwoNumbers):     MaybeHighBitArray<Id64Args.TwoNumbers>;
-export declare function getNeighbors(kind: Id64ArgKind.Uint32Array,    ...id: Id64Args.Uint32Array):    MaybeHighBitArray<Id64Args.Uint32Array>;
-export declare function getNeighbors(kind: Id64ArgKind.DoubleAsBuffer, ...id: Id64Args.DoubleAsBuffer): MaybeHighBitArray<Id64Args.DoubleAsBuffer>;
-export declare function getNeighbors(kind: Id64ArgKind.BigInt,         ...id: Id64Args.BigInt):         MaybeHighBitArray<Id64Args.BigInt>;
-// generic case
-export declare function getNeighbors(kind: Id64ArgKind, ...id: Id64Arg): MaybeHighBitArray<Id64Arg>;
+export const getNeighbors: {
+  (kind: Id64ArgKind.LowHighObject,  ...id: Id64Args.LowHighObject):  MaybeHighBitArray<Id64Args.LowHighObject>;
+  (kind: Id64ArgKind.LowHighArray,   ...id: Id64Args.LowHighArray):   MaybeHighBitArray<Id64Args.LowHighArray>;
+  (kind: Id64ArgKind.HexString,      ...id: Id64Args.HexString):      MaybeHighBitArray<Id64Args.HexString>;
+  (kind: Id64ArgKind.Base64String,   ...id: Id64Args.Base64String):   MaybeHighBitArray<Id64Args.Base64String>;
+  (kind: Id64ArgKind.ByteString,     ...id: Id64Args.ByteString):     MaybeHighBitArray<Id64Args.ByteString>;
+  (kind: Id64ArgKind.TwoNumbers,     ...id: Id64Args.TwoNumbers):     MaybeHighBitArray<Id64Args.TwoNumbers>;
+  (kind: Id64ArgKind.Uint32Array,    ...id: Id64Args.Uint32Array):    MaybeHighBitArray<Id64Args.Uint32Array>;
+  (kind: Id64ArgKind.DoubleAsBuffer, ...id: Id64Args.DoubleAsBuffer): MaybeHighBitArray<Id64Args.DoubleAsBuffer>;
+  (kind: Id64ArgKind.BigInt,         ...id: Id64Args.BigInt):         MaybeHighBitArray<Id64Args.BigInt>;
+  // generic case
+  (kind: Id64ArgKind, ...id: Id64Arg): MaybeHighBitArray<Id64Arg>;
+} = nativeBindings.getNeighbors;
 
-export declare function getNodes(kind: Id64ArgKind.LowHighObject ): MaybeHighBitArray<Id64Args.LowHighObject>;
-export declare function getNodes(kind: Id64ArgKind.LowHighArray  ): MaybeHighBitArray<Id64Args.LowHighArray>;
-export declare function getNodes(kind: Id64ArgKind.HexString     ): MaybeHighBitArray<Id64Args.HexString>;
-export declare function getNodes(kind: Id64ArgKind.Base64String  ): MaybeHighBitArray<Id64Args.Base64String>;
-export declare function getNodes(kind: Id64ArgKind.ByteString    ): MaybeHighBitArray<Id64Args.ByteString>;
-export declare function getNodes(kind: Id64ArgKind.TwoNumbers    ): MaybeHighBitArray<Id64Args.TwoNumbers>;
-export declare function getNodes(kind: Id64ArgKind.Uint32Array   ): MaybeHighBitArray<Id64Args.Uint32Array>;
-export declare function getNodes(kind: Id64ArgKind.DoubleAsBuffer): MaybeHighBitArray<Id64Args.DoubleAsBuffer>;
-export declare function getNodes(kind: Id64ArgKind.BigInt        ): MaybeHighBitArray<Id64Args.BigInt>;
-// generic case
-export declare function getNodes(kind: Id64ArgKind): MaybeHighBitArray<Id64Arg>;
+export const getNodes: {
+  (kind: Id64ArgKind.LowHighObject ): MaybeHighBitArray<Id64Args.LowHighObject>;
+  (kind: Id64ArgKind.LowHighArray  ): MaybeHighBitArray<Id64Args.LowHighArray>;
+  (kind: Id64ArgKind.HexString     ): MaybeHighBitArray<Id64Args.HexString>;
+  (kind: Id64ArgKind.Base64String  ): MaybeHighBitArray<Id64Args.Base64String>;
+  (kind: Id64ArgKind.ByteString    ): MaybeHighBitArray<Id64Args.ByteString>;
+  (kind: Id64ArgKind.TwoNumbers    ): MaybeHighBitArray<Id64Args.TwoNumbers>;
+  (kind: Id64ArgKind.Uint32Array   ): MaybeHighBitArray<Id64Args.Uint32Array>;
+  (kind: Id64ArgKind.DoubleAsBuffer): MaybeHighBitArray<Id64Args.DoubleAsBuffer>;
+  (kind: Id64ArgKind.BigInt        ): MaybeHighBitArray<Id64Args.BigInt>;
+  // generic case
+  (kind: Id64ArgKind): MaybeHighBitArray<Id64Arg>;
+} = nativeBindings.getNodes;
 
-export declare function doubleAsBufferWhenNanEqFallback(l: Id64Args.DoubleAsBuffer[0], r: Id64Args.DoubleAsBuffer[0]): boolean;
+
+
+export const nativeDjikstras
+  : () => void
+  = nativeBindings.nativeDjikstras;
+
+
+export const doubleAsBufferWhenNanEqFallback
+  : (l: Id64Args.DoubleAsBuffer[0], r: Id64Args.DoubleAsBuffer[0]) => boolean
+  = nativeBindings.doubleAsBufferWhenNanEqFallback;
 
 export function doubleAsBufferEq(...[l, _lExtra, r, _rExtra]: [...Id64Args.DoubleAsBuffer, ...Id64Args.DoubleAsBuffer]): boolean {
   // there is a small proportion (though not extremely tiny) of random u64 that will be NaN and because of the js spec we must handle these in native
@@ -92,17 +104,6 @@ export function doubleAsBufferEq(...[l, _lExtra, r, _rExtra]: [...Id64Args.Doubl
     : l === r;
 }
 
-/*
-export function eq(kind: Id64ArgKind.LowHighObject,  ...[l, lExtra, r, rExtra]: [...Id64Args.LowHighObject, ...Id64Args.LowHighObject]):  boolean
-export function eq(kind: Id64ArgKind.LowHighArray,   ...[l, lExtra, r, rExtra]: [...Id64Args.LowHighArray, ...Id64Args.LowHighArray]):   boolean
-export function eq(kind: Id64ArgKind.HexString,      ...[l, lExtra, r, rExtra]: [...Id64Args.HexString, ...Id64Args.HexString]):      boolean
-export function eq(kind: Id64ArgKind.Base64String,   ...[l, lExtra, r, rExtra]: [...Id64Args.Base64String, ...Id64Args.Base64String]):   boolean
-export function eq(kind: Id64ArgKind.ByteString,     ...[l, lExtra, r, rExtra]: [...Id64Args.ByteString, ...Id64Args.ByteString]):     boolean
-export function eq(kind: Id64ArgKind.TwoNumbers,     ...[l, lExtra, r, rExtra]: [...Id64Args.TwoNumbers, ...Id64Args.TwoNumbers]):     boolean
-export function eq(kind: Id64ArgKind.Uint32Array,    ...[l, lExtra, r, rExtra]: [...Id64Args.Uint32Array, ...Id64Args.Uint32Array]):    boolean
-export function eq(kind: Id64ArgKind.DoubleAsBuffer, ...[l, lExtra, r, rExtra]: [...Id64Args.DoubleAsBuffer, ...Id64Args.DoubleAsBuffer]): boolean
-export function eq(kind: Id64ArgKind.BigInt,         ...[l, lExtra, r, rExtra]: [...Id64Args.BigInt, ...Id64Args.BigInt]):         boolean
-*/
 export function eq(...[kind, l, lExtra, r, rExtra]:
   | [Id64ArgKind.LowHighObject, ...Id64Args.LowHighObject, ...Id64Args.LowHighObject]
   | [Id64ArgKind.LowHighArray,  ...Id64Args.LowHighArray, ...Id64Args.LowHighArray]
@@ -133,4 +134,6 @@ export function eq(...[kind, l, lExtra, r, rExtra]:
   }
 }
 
-export declare function getLastHighBits(): number;
+export const getLastHighBits
+  : () => number
+  = nativeBindings.getLastHighBits;

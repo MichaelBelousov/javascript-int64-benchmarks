@@ -16,6 +16,7 @@
     "@types/heap": "^0.2.29",
     "benchmark": "^2.1.4",
     "heap": "^0.2.7",
+    "microtime": "^3.0.0",
     "ts-node": "^10.5.0"
   },
   "devDependencies": {

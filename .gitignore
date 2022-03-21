@@ -9,3 +9,6 @@ build
 
 # clangd
 compile_commands.json
+
+# ts-node
+.ts-node

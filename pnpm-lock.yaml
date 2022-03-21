@@ -7,6 +7,7 @@ specifiers:
   benchmark: ^2.1.4
   bindings: ^1.5.0
   heap: ^0.2.7
+  microtime: ^3.0.0
   node-addon-api: ^4.3.0
   node-gyp: ^9.0.0
   ts-node: ^10.5.0
@@ -16,6 +17,7 @@ dependencies:
   '@types/heap': 0.2.29
   benchmark: 2.1.4
   heap: 0.2.7
+  microtime: 3.0.0
   ts-node: 10.5.0_e79e62fe450383fd2d418267dc75e645
 
 devDependencies:
@@ -455,6 +457,15 @@ packages:
       - supports-color
     dev: true
 
+  /microtime/3.0.0:
+    resolution: {integrity: sha512-SirJr7ZL4ow2iWcb54bekS4aWyBQNVcEDBiwAz9D/sTgY59A+uE8UJU15cp5wyZmPBwg/3zf8lyCJ5NUe1nVlQ==}
+    engines: {node: '>= 4.0.0'}
+    requiresBuild: true
+    dependencies:
+      node-addon-api: 1.7.2
+      node-gyp-build: 3.9.0
+    dev: false
+
   /minimatch/3.1.2:
     resolution: {integrity: sha512-J7p63hRiAjw1NDEww1W7i37+ByIrOWO5XQQAzZ3VOcL0PNybwpfmV/N05zFAzwQ9USyEcX6t3UO+K5aqBQOIHw==}
     dependencies:
@@ -534,9 +545,18 @@ packages:
     engines: {node: '>= 0.6'}
     dev: true
 
+  /node-addon-api/1.7.2:
+    resolution: {integrity: sha512-ibPK3iA+vaY1eEjESkQkM0BbCqFOaZMiXRTtdB0u7b4djtY6JnsjvPdUHVMg6xQt3B8fpTTWHI9A+ADjM9frzg==}
+    dev: false
+
   /node-addon-api/4.3.0:
     resolution: {integrity: sha512-73sE9+3UaLYYFmDsFZnqCInzPyh3MqIwZO9cw58yIqAZhONrrabrYyYe3TuIqtIiOuTXVhsGau8hcrhhwSsDIQ==}
     dev: true
+
+  /node-gyp-build/3.9.0:
+    resolution: {integrity: sha512-zLcTg6P4AbcHPq465ZMFNXx7XpKKJh+7kkN699NiQWisR2uWYOWNWqRHAmbnmKiL4e9aLSlmy5U7rEMUXV59+A==}
+    hasBin: true
+    dev: false
 
   /node-gyp/9.0.0:
     resolution: {integrity: sha512-Ma6p4s+XCTPxCuAMrOA/IJRmVy16R8Sdhtwl4PrCr7IBlj4cPawF0vg/l7nOT1jPbuNS7lIRJpBSvVsXwEZuzw==}

@@ -19,13 +19,19 @@ using NodeId = uint64_t;
 using Node = std::vector<NodeId>;
 using Graph = std::unordered_map<NodeId, Node>;
 
-struct JsGraph : Napi::ObjectWrap<Graph> {};
+//struct JsGraph : Napi::ObjectWrap<Graph> {};
 
-Graph buildGraph(size_t size) {
+struct BuildGraphResult {
+  Graph graph;
+  NodeId first;
+  NodeId last;
+};
+
+BuildGraphResult buildGraph(size_t size) {
   std::vector<NodeId> nodeList;
   nodeList.reserve(size);
-  Graph graph{};
-  graph.reserve(size);
+  BuildGraphResult result;
+  result.graph.reserve(size);
 
   std::srand(std::time(nullptr));
 
@@ -41,12 +47,14 @@ Graph buildGraph(size_t size) {
   // create nodes
   for (auto i = 0UL; i < size; ++i) {
     const auto id = randomUint64();
-    graph[id] = Node{};
+    result.graph[id] = Node{};
+    if (i == 0) result.first = id;
+    if (i == size - 1) result.last = id;
     nodeList.push_back(id);
   }
 
   // create edges, for now just 1 to 5 random ones
-  for (auto& [nodeId, node] : graph) {
+  for (auto& [nodeId, node] : result.graph) {
     constexpr auto minEdgesPerNode = 1;
     constexpr auto maxEdgesPerNode = 5;
     constexpr auto edgesRangePerNode = maxEdgesPerNode - minEdgesPerNode;
@@ -64,7 +72,7 @@ Graph buildGraph(size_t size) {
     }
   }
 
-  return graph;
+  return result;
 }
 
 using Distance = uint32_t;
@@ -262,9 +270,19 @@ namespace Int64Converters {
 };
 
 Graph moduleGraph;
+NodeId moduleStart;
+NodeId moduleEnd;
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
-  moduleGraph = buildGraph(50000);
+  auto&& moduleGraphResult = buildGraph(50000);
+  moduleGraph = std::move(moduleGraphResult.graph);
+  moduleStart = moduleGraphResult.first;
+  moduleEnd = moduleGraphResult.last;
+
+  exports["nativeDjikstras"] = Napi::Function::New(env, [](const Napi::CallbackInfo& info) -> Napi::Value {
+    djikstras(moduleGraph, moduleStart, moduleEnd);
+    return info.Env().Undefined();
+  });
 
   exports["getLastHighBits"] = Napi::Function::New(env, [](const Napi::CallbackInfo& info) -> Napi::Value {
     return Napi::Number::New(info.Env(), lastHighBits);

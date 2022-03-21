@@ -1,9 +1,10 @@
 import * as Benchmark from "benchmark";
 import { Id64ArgKind, Id64Arg, getNeighbors, Id64Args, getNodes, MaybeHighBitArray, IdArgsFor } from "./addon";
-import Heap from "heap";
+//import Heap from "heap";
+const Heap = require("heap"); // wasn't working for some reason
 import { MakeIdMapClass, MakeIdSetClass } from "./Id64Containers";
 
-const suite = new Benchmark.Suite();
+const suite = new Benchmark.Suite("Int64 interop JavaScript");
 
 function djikstras(
   kind:
@@ -31,7 +32,7 @@ function djikstras(
   const inQueue = new (MakeIdSetClass<Type>(kind))();
 
   const nodes = getNodes(kind);
-  const maybeHighBits: number[] = (nodes as MaybeHighBitArray<Id64Args.TwoNumbers>).highBits ?? [];
+  const maybeHighBits: number[] = (nodes as MaybeHighBitArray<Id64Args.TwoNumbers>).highBits || [];
 
   const start = nodes[0], startExtra = maybeHighBits[0];
 
@@ -47,7 +48,7 @@ function djikstras(
     const [u, uExtra] = queue.pop() as Id64Arg;
     // FIXME remove `any` usage
     const neighbors = getNeighbors(kind, u as any, uExtra as any) as Type[0][];
-    const maybeHighBits: number[] = (neighbors as MaybeHighBitArray<Id64Args.TwoNumbers>).highBits ?? [];
+    const maybeHighBits: number[] = (neighbors as MaybeHighBitArray<Id64Args.TwoNumbers>).highBits || [];
     for (let i = 0; i < neighbors.length; ++i) {
       const neighbor = neighbors[i];
       const neighborExtra = maybeHighBits[i];
@@ -63,11 +64,13 @@ function djikstras(
   }
 }
 
+const erroredBenchmarks = new Set<Benchmark>();
+
 suite
   .add("use low/high object {low: u32, high: u32}", function() {
     djikstras(Id64ArgKind.LowHighObject);
   })
-  .add("use low/high array {u32, u32}", function() {
+  .add("use low/high array [u32, u32]", function() {
     djikstras(Id64ArgKind.LowHighArray);
   })
   .add("use hex string: '0xff'", function() {
@@ -78,7 +81,7 @@ suite
   .add("use base64 string: 'bXd='", function() {
     djikstras(Id64ArgKind.Base64String);
   })
-  .add("use byte string: '\\u{0001}\\x00\\x00\\x42", function() {
+  .add("use byte string: '\\u{0001}\\x00\\x00\\x42'", function() {
     djikstras(Id64ArgKind.ByteString);
   })
   .add("use two number arguments everywhere", function() {
@@ -92,10 +95,24 @@ suite
   })
   //.add("use 64-bit number as an 8-byte buffer, native equality check only", function() {})
   .on("cycle", function(event: Benchmark.Event) {
-    console.log(`${event.target}`);
+    if (event.aborted) console.log(`test '${event.target.name}' was aborted`);
+    if (event.cancelled) console.log(`test '${event.target.name}' was cancelled`);
+    else console.log(`${event.target}`);
   })
   .on("complete", function(this: Benchmark.Suite) {
     console.log(this.join('\n'));
   })
+  .on("error", function(this: Benchmark.Suite) {
+    const [newError] = this
+      .filter((benchmark: Benchmark) => benchmark.error)
+      .filter((benchmark: Benchmark) => !erroredBenchmarks.has(benchmark))
+      .map((benchmark: Benchmark) => benchmark.error);
+    erroredBenchmarks.add(newError);
+    console.error(newError);
+  })
+  .on("abort", function(this: Benchmark) {
+    console.error("aborted");
+  })
+  .run()
 ;
 
