@@ -1,8 +1,10 @@
+#include "js_native_api.h"
 #include <limits>
 #include <sstream>
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
+#include <node_api.h>
 #include <napi.h>
 #include <stdexcept>
 #include <vector>
@@ -176,8 +178,9 @@ namespace Int64Converters {
     }
     // ("\u0000\u0001\x00") => "\u0000\u0001\x00"
     auto ByteString(const Napi::Value& jsVal, const Napi::Value&) -> NodeId {
-      const std::string&& arg1 = jsVal.As<Napi::String>().Utf8Value();
-      const NodeId value = *reinterpret_cast<const NodeId*>(arg1.data());
+      char buffer[sizeof(NodeId)];
+      napi_get_value_string_latin1(jsVal.Env(), jsVal, buffer, sizeof(buffer), nullptr);
+      const NodeId value = *reinterpret_cast<const NodeId*>(&buffer);
       return value;
     }
     // (low, high) => low; high = native.getLastHighBits()
@@ -248,8 +251,11 @@ namespace Int64Converters {
     }
     // ("\u0000\u0001\x00") => "\u0000\u0001\x00"
     auto ByteString(Napi::Env env, uint64_t val) -> Napi::Value {
-      const auto jsVal = Napi::String::New(env, reinterpret_cast<char*>(val), 8);
-      return jsVal;
+      // there is no node-addon-api wrapper for this so we have to use the napi c_api
+      napi_value jsVal;
+      napi_status status = napi_create_string_latin1(env, reinterpret_cast<char*>(&val), sizeof(val), &jsVal);
+      NAPI_THROW_IF_FAILED(env, status, String());
+      return Napi::String(env, jsVal);
     }
     // (low, high) => low; high = native.getLastHighBits()
     auto TwoNumbers(Napi::Env env, uint64_t val) -> Napi::Value {

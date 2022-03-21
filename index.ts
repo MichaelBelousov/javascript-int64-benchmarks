@@ -101,7 +101,8 @@ suite
     else console.log(`${event.target}`);
   })
   .on("complete", function(this: Benchmark.Suite) {
-    console.log(this.join('\n'));
+    const [fastest] = this.filter('fastest').map((b: Benchmark) => b.name) as string[];
+    console.log(`fastest was: ${fastest}`);
   })
   .on("error", function(this: Benchmark.Suite) {
     const [newError] = this
