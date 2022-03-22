@@ -94,8 +94,13 @@ suite
   .add("do it all in native (control)", function() {
     nativeDjikstras();
   })
+  // the performance of this test is highly affected by using a native map implementation
+  // instead of JavaScript's map, due to limitations of comparing NaNs in JavaScript
   .add("use 64-bit number as an 8-byte buffer", function() {
     djikstras(Id64ArgKind.DoubleAsBuffer);
+  })
+  .add("use BigInt", function() {
+    djikstras(Id64ArgKind.BigInt);
   })
   //.add("use 64-bit number as an 8-byte buffer, native equality check only", function() {})
   .on("cycle", function(event: Benchmark.Event) {

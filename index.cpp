@@ -8,7 +8,7 @@
 #include <napi.h>
 #include <stdexcept>
 #include <vector>
-#include <set>
+#include <unordered_set>
 #include <unordered_map>
 #include <cstdint>
 #include <queue>
@@ -102,7 +102,7 @@ Distance djikstras(const Graph& graph, NodeId start, NodeId end) {
     decltype(nodeDistanceCmp)
   >(nodeDistanceCmp);
 
-  std::set<NodeId> inQueue;
+  std::unordered_set<NodeId> inQueue;
 
   queue.container().reserve(graph.size());
 
@@ -302,9 +302,9 @@ namespace Int64Converters {
 
 struct DoubleAsBufferMap : Napi::ObjectWrap<DoubleAsBufferMap> {
   std::unordered_map<NodeId, Napi::Reference<Napi::Value>> _map;
-  static Napi::FunctionReference& Constructor;
-  static Napi::Value Init(Napi::Env env, Napi::Object exports) {
-    Napi::Function wrappedCtor = DefineClass(env, "NativeObj", {
+  static Napi::FunctionReference Constructor;
+  static void Init(Napi::Env env, Napi::Object exports) {
+    Napi::Function wrappedCtor = DefineClass(env, "DoubleAsBufferMap", {
         InstanceMethod<&DoubleAsBufferMap::Get>("get"),
         InstanceMethod<&DoubleAsBufferMap::Set>("set"),
     });
@@ -324,11 +324,40 @@ struct DoubleAsBufferMap : Napi::ObjectWrap<DoubleAsBufferMap> {
   }
   Napi::Value Set(const Napi::CallbackInfo& info) {
     const auto&& key = Int64Converters::From::DoubleAsBuffer(info[0].As<Napi::Number>(), info.Env().Undefined());
-    auto val = Napi::Reference<Napi::Value>::New(info[1], 1);
+    // TODO: this ToObject is inperfect since now the value is voxed and `typeof` won't work
+    auto val = Napi::Reference<Napi::Value>::New(info[2].ToObject(), 1);
     _map[key] = std::move(val); // FIXME: wut
     return info.Env().Undefined();
   }
 };
+
+Napi::FunctionReference DoubleAsBufferMap::Constructor;
+
+struct DoubleAsBufferSet : Napi::ObjectWrap<DoubleAsBufferSet> {
+  std::unordered_set<NodeId> _set;
+  static Napi::FunctionReference Constructor;
+  static void Init(Napi::Env env, Napi::Object exports) {
+    Napi::Function wrappedCtor = DefineClass(env, "DoubleAsBufferSet", {
+        InstanceMethod<&DoubleAsBufferSet::Has>("has"),
+        InstanceMethod<&DoubleAsBufferSet::Add>("add"),
+    });
+    Constructor = Napi::Persistent(wrappedCtor);
+    Constructor.SuppressDestruct();
+    exports["DoubleAsBufferSet"] = wrappedCtor;
+  }
+  DoubleAsBufferSet(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DoubleAsBufferSet>{info}, _set{} {}
+  Napi::Value Has(const Napi::CallbackInfo& info) {
+    const auto&& key = Int64Converters::From::DoubleAsBuffer(info[0].As<Napi::Number>(), info.Env().Undefined());
+    return Napi::Boolean::New(info.Env(), _set.find(key) != _set.end());
+  }
+  Napi::Value Add(const Napi::CallbackInfo& info) {
+    const auto&& key = Int64Converters::From::DoubleAsBuffer(info[0].As<Napi::Number>(), info.Env().Undefined());
+    _set.insert(key);
+    return info.Env().Undefined();
+  }
+};
+
+Napi::FunctionReference DoubleAsBufferSet::Constructor;
 
 Graph moduleGraph;
 NodeId moduleStart;
@@ -404,6 +433,7 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   });
 
   DoubleAsBufferMap::Init(env, exports);
+  DoubleAsBufferSet::Init(env, exports);
 
   return exports;
 }

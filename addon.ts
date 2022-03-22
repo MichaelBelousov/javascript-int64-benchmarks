@@ -137,3 +137,21 @@ export function eq(...[kind, l, lExtra, r, rExtra]:
 export const getLastHighBits
   : () => number
   = nativeBindings.getLastHighBits;
+
+interface DoubleAsBufferMap<V> {
+  get(...[k, kExtra]: Id64Args.DoubleAsBuffer): V;
+  set(...[k, kExtra, v]: [...Id64Args.DoubleAsBuffer, V]): DoubleAsBufferMap<V>;
+}
+
+export const DoubleAsBufferMap: {
+  new <V>(): DoubleAsBufferMap<V>
+} = nativeBindings.DoubleAsBufferMap;
+
+interface DoubleAsBufferSet<V> {
+  has(...[k, kExtra]: Id64Args.DoubleAsBuffer): boolean;
+  add(...[k, kExtra]: Id64Args.DoubleAsBuffer): DoubleAsBufferSet<V>;
+}
+
+export const DoubleAsBufferSet: {
+  new <V>(): DoubleAsBufferSet<V>
+} = nativeBindings.DoubleAsBufferSet;

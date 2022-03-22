@@ -1,5 +1,5 @@
-// TODO: rename all Id64 crap to Int64
-import { Id64Arg, Id64ArgKind, Id64Args } from "./addon";
+// TODO: probably should make Int64/Id64 names consistent
+import { DoubleAsBufferMap, DoubleAsBufferSet, Id64Arg, Id64ArgKind, Id64Args } from "./addon";
 
 export interface Id64Map<K extends Id64Arg, V> /* extends Pick<Map<K, V>, "get" | "set"> */ {
   get(k: K[0], kExtra: K[1]): V | undefined;
@@ -70,20 +70,7 @@ export function MakeIdMapClass<V>(
     case Id64ArgKind.BigInt:
       return Map;
     case Id64ArgKind.TwoNumbers: return LayeredMap;
-    // not sure if this one can be done in javascript...
-    case Id64ArgKind.DoubleAsBuffer:
-      return class DoubleAsBufferMap implements Id64Map<Id64Args.DoubleAsBuffer, V> {
-        _map = new Map<Id64Args.DoubleAsBuffer[0], V>();
-        get(...[k]: Id64Args.DoubleAsBuffer): V | undefined {
-          if (Number.isNaN(k)) throw Error("do not yet handle NaNs in this container...");
-          return this._map.get(k);
-        }
-        set(...[k, _kExtra, value]: [...Id64Args.DoubleAsBuffer, V]): this {
-          if (Number.isNaN(k)) throw Error("do not yet handle NaNs in this container...");
-          this._map.set(k, value);
-          return this;
-        }
-      };
+    case Id64ArgKind.DoubleAsBuffer: return DoubleAsBufferMap;
   }
 }
 
@@ -156,17 +143,6 @@ export function MakeIdSetClass<V>(
     case Id64ArgKind.BigInt:
       return Set;
     case Id64ArgKind.TwoNumbers: return LayeredSet;
-    // not sure if this one can be done in javascript...
-    case Id64ArgKind.DoubleAsBuffer:
-      return class DoubleAsBufferMap extends Set<Id64Args.DoubleAsBuffer[0]> {
-        has(...[k]: Id64Args.DoubleAsBuffer): boolean {
-          if (Number.isNaN(k)) throw Error("do not yet handle NaNs in this container...");
-          return super.has(k);
-        }
-        add(...[k]: Id64Args.DoubleAsBuffer): this {
-          if (Number.isNaN(k)) throw Error("do not yet handle NaNs in this container...");
-          return super.add(k);
-        }
-      }
+    case Id64ArgKind.DoubleAsBuffer: return DoubleAsBufferSet;
   }
 }
