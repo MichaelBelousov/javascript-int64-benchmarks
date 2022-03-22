@@ -205,7 +205,9 @@ namespace Int64Converters {
     }
     // (bigint) => bigint
     auto BigInt(const Napi::Value& jsVal, const Napi::Value&) -> NodeId {
-      const uint64_t value = jsVal.As<Napi::BigInt>().Uint64Value(nullptr);
+      // FIXME: this should never be triggered, we should never generate such bigints
+      bool lossless;
+      const uint64_t value = jsVal.As<Napi::BigInt>().Uint64Value(&lossless);
       return value;
     }
 
