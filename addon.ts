@@ -1,4 +1,10 @@
-const nativeBindings = require("./build/Debug/addon");
+let nativeBindings;
+try {
+  nativeBindings = require("./build/Release/addon");
+} catch {
+  nativeBindings = require("./build/Debug/addon");
+}
+
 
 // matches array in C++
 export enum Id64ArgKind {

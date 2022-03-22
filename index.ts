@@ -110,8 +110,8 @@ suite
   })
   .on("complete", function(this: Benchmark.Suite) {
     const [fastest]: string[] = this
-      .filter('fastest')
       .filter((b: Benchmark) => !/\(control\)$/.test(b.name))
+      .filter('fastest')
       .map((b: Benchmark) => b.name);
     console.log(`fastest was: ${fastest}`);
   })

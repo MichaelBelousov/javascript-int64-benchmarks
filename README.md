@@ -17,23 +17,22 @@ Goals are:
 
 ## The latest results
 
-Last generated on my 6-core i7-8850H@2.60GHz
+Last generated on my 6-core i7-8850H@2.60GHz on node v12.22.7
 
 ```results
 
 > javascript-int64-benchmarks@1.0.0 start /home/mike/personal/javascript-int64-benchmarks
 > ts-node index.ts
 
-use BigInt x 94.35 ops/sec ±0.81% (69 runs sampled)
-use low/high object {low: u32, high: u32} x 32.46 ops/sec ±5.38% (59 runs sampled)
-use low/high array [u32, u32] x 39.32 ops/sec ±1.57% (54 runs sampled)
-use hex string: '0xff' x 43.52 ops/sec ±0.35% (57 runs sampled)
-use byte string: '\u{0001}\x00\x00\x42' x 92.97 ops/sec ±5.10% (59 runs sampled)
-use two number arguments everywhere x 33.80 ops/sec ±5.97% (55 runs sampled)
-use Uint32Array x 33.17 ops/sec ±1.09% (58 runs sampled)
-do it all in native (control) x 32.42 ops/sec ±0.77% (43 runs sampled)
-use 64-bit number as an 8-byte buffer x 10.68 ops/sec ±7.65% (32 runs sampled)
-fastest was: use BigInt
+use low/high object {low: u32, high: u32} x 32.42 ops/sec ±7.65% (44 runs sampled)
+use low/high array [u32, u32] x 34.72 ops/sec ±5.72% (57 runs sampled)
+use hex string: '0xff' x 55.07 ops/sec ±0.46% (71 runs sampled)
+use byte string: '\u{0001}\x00\x00\x42' x 147 ops/sec ±1.99% (82 runs sampled)
+use two number arguments everywhere x 52.77 ops/sec ±8.40% (63 runs sampled)
+use Uint32Array x 35.61 ops/sec ±5.12% (47 runs sampled)
+do it all in native (control) x 197 ops/sec ±0.17% (80 runs sampled)
+use 64-bit number as an 8-byte buffer x 20.80 ops/sec ±6.27% (40 runs sampled)
+use BigInt x 57.53 ops/sec ±5.83% (59 runs sampled)
+fastest was: use byte string: '\u{0001}\x00\x00\x42'
 
 ```
-
