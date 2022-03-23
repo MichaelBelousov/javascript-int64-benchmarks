@@ -7,13 +7,13 @@ resolve this, it has been shown to be slower than existing hacks for the 64-bit 
 tuning have already optimized down.
 
 This benchmark tries to capture the performance of various 64-bit integer implementations in JavaScript to see if BigInt has caught up,
-and how it compares to many other ways to shoving a 64-bit integer into JavaScript.
+and how it compares to many other ways of shoving a 64-bit integer into JavaScript.
 
 Goals are:
 
 - measure performance accurately in the V8 JavaScript engine
 - measure performance of marshalling various JavaScript representations of Int64 through native bindings
-- use idiomatic code for storing Int64 in JavaScript values.
+- use idiomatic code for storing Int64 in JavaScript values
 
 ## The latest results
 
@@ -31,6 +31,7 @@ use byte string: '\u{0001}\x00\x00\x42' x 147 ops/sec ±1.99% (82 runs sampled)
 use two number arguments everywhere x 52.77 ops/sec ±8.40% (63 runs sampled)
 use Uint32Array x 35.61 ops/sec ±5.12% (47 runs sampled)
 do it all in native (control) x 197 ops/sec ±0.17% (80 runs sampled)
+# this test is not comparable to the others due to using a custom native map instead of a javascript Map
 use 64-bit number as an 8-byte buffer x 20.80 ops/sec ±6.27% (40 runs sampled)
 use BigInt x 57.53 ops/sec ±5.83% (59 runs sampled)
 fastest was: use byte string: '\u{0001}\x00\x00\x42'

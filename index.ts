@@ -106,14 +106,26 @@ suite
   .on("cycle", function(event: Benchmark.Event) {
     if (event.aborted) console.log(`test '${event.target.name}' was aborted`);
     if (event.cancelled) console.log(`test '${event.target.name}' was cancelled`);
-    else console.log(`${event.target}`);
+    console.log(event.target)
   })
   .on("complete", function(this: Benchmark.Suite) {
-    const [fastest]: string[] = this
-      .filter((b: Benchmark) => !/\(control\)$/.test(b.name))
-      .filter('fastest')
-      .map((b: Benchmark) => b.name);
-    console.log(`fastest was: ${fastest}`);
+    const maxHz = this.sort((a, b) => b.hz - a.hz)[0].hz;
+    const fmter = new Intl.NumberFormat("en-US", {
+      maximumFractionDigits: 4,
+    })
+    console.table(
+      this
+        .sort((a, b) => b.hz - a.hz)
+        .reduce<Record<string, {}>>((prev, cur: Benchmark) => (
+          prev[cur.name] = {
+            hertz: Number(fmter.format(cur.hz)),
+            samples: cur.stats.sample.length,
+            "margin of error": `±${Number(cur.stats.rme).toFixed(2)}%`,
+            "ratio": Number(fmter.format(cur.hz / maxHz))
+          },
+          prev
+        ), {})
+    )
   })
   .on("error", function(this: Benchmark.Suite) {
     const [newError] = this
