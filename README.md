@@ -20,20 +20,18 @@ Goals are:
 Last generated on my 6-core i7-8850H@2.60GHz on node v12.22.7
 
 ```results
-
-> javascript-int64-benchmarks@1.0.0 start /home/mike/personal/javascript-int64-benchmarks
-> ts-node index.ts
-
-use low/high object {low: u32, high: u32} x 32.42 ops/sec ±7.65% (44 runs sampled)
-use low/high array [u32, u32] x 34.72 ops/sec ±5.72% (57 runs sampled)
-use hex string: '0xff' x 55.07 ops/sec ±0.46% (71 runs sampled)
-use byte string: '\u{0001}\x00\x00\x42' x 147 ops/sec ±1.99% (82 runs sampled)
-use two number arguments everywhere x 52.77 ops/sec ±8.40% (63 runs sampled)
-use Uint32Array x 35.61 ops/sec ±5.12% (47 runs sampled)
-do it all in native (control) x 197 ops/sec ±0.17% (80 runs sampled)
-# this test is not comparable to the others due to using a custom native map instead of a javascript Map
-use 64-bit number as an 8-byte buffer x 20.80 ops/sec ±6.27% (40 runs sampled)
-use BigInt x 57.53 ops/sec ±5.83% (59 runs sampled)
-fastest was: use byte string: '\u{0001}\x00\x00\x42'
-
+ran on linux-x64 on node v17.5.0
+┌───────────────────────────────────────────┬──────────┬─────────┬─────────────────┬────────┐
+│                  (index)                  │  hertz   │ samples │ margin of error │ ratio  │
+├───────────────────────────────────────────┼──────────┼─────────┼─────────────────┼────────┤
+│       do it all in native (control)       │ 185.1604 │   79    │    '±3.38%'     │   1    │
+│  use byte string: '\u{0001}\x00\x00\x42'  │ 165.0317 │   84    │    '±1.38%'     │ 0.8913 │
+│    use two number arguments everywhere    │ 62.8541  │   65    │    '±0.99%'     │ 0.3395 │
+│          use hex string: '0xff'           │ 54.7092  │   70    │    '±1.89%'     │ 0.2955 │
+│       use low/high array [u32, u32]       │ 53.4918  │   69    │    '±1.11%'     │ 0.2889 │
+│                use BigInt                 │ 48.3158  │   50    │    '±5.21%'     │ 0.2609 │
+│ use low/high object {low: u32, high: u32} │ 40.9281  │   59    │    '±9.75%'     │ 0.221  │
+│              use Uint32Array              │ 28.1204  │   48    │    '±5.87%'     │ 0.1519 │
+│   use 64-bit number as an 8-byte buffer   │ 22.8174  │   41    │    '±2.06%'     │ 0.1232 │
+└───────────────────────────────────────────┴──────────┴─────────┴─────────────────┴────────┘
 ```
