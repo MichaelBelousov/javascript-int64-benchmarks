@@ -3,6 +3,7 @@ import { Id64ArgKind, Id64Arg, getNeighbors, Id64Args, getNodes, MaybeHighBitArr
 //import Heap from "heap";
 const Heap = require("heap"); // wasn't working for some reason
 import { MakeIdMapClass, MakeIdSetClass } from "./Id64Containers";
+const os = require("os");
 
 const suite = new Benchmark.Suite("Int64 interop JavaScript");
 
@@ -106,13 +107,14 @@ suite
   .on("cycle", function(event: Benchmark.Event) {
     if (event.aborted) console.log(`test '${event.target.name}' was aborted`);
     if (event.cancelled) console.log(`test '${event.target.name}' was cancelled`);
-    console.log(event.target)
+    console.log(event.target.toString());
   })
   .on("complete", function(this: Benchmark.Suite) {
     const maxHz = this.sort((a, b) => b.hz - a.hz)[0].hz;
     const fmter = new Intl.NumberFormat("en-US", {
       maximumFractionDigits: 4,
     })
+    console.log(`ran on ${os.platform()}-${os.arch()} on node ${process.version}`);
     console.table(
       this
         .sort((a, b) => b.hz - a.hz)
