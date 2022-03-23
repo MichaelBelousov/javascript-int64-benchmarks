@@ -120,10 +120,10 @@ suite
         .sort((a, b) => b.hz - a.hz)
         .reduce<Record<string, {}>>((prev, cur: Benchmark) => (
           prev[cur.name] = {
-            hertz: Number(fmter.format(cur.hz)),
+            "ops/s": Number(fmter.format(cur.hz)),
             samples: cur.stats.sample.length,
             "margin of error": `±${Number(cur.stats.rme).toFixed(2)}%`,
-            "ratio": Number(fmter.format(cur.hz / maxHz))
+            ratio: Number(fmter.format(cur.hz / maxHz))
           },
           prev
         ), {})

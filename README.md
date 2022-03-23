@@ -22,7 +22,7 @@ Last generated on my 6-core i7-8850H@2.60GHz on node v12.22.7
 ```results
 ran on linux-x64 on node v17.5.0
 ┌───────────────────────────────────────────┬──────────┬─────────┬─────────────────┬────────┐
-│                  (index)                  │  hertz   │ samples │ margin of error │ ratio  │
+│                  (index)                  │  ops/s   │ samples │ margin of error │ ratio  │
 ├───────────────────────────────────────────┼──────────┼─────────┼─────────────────┼────────┤
 │       do it all in native (control)       │ 185.1604 │   79    │    '±3.38%'     │   1    │
 │  use byte string: '\u{0001}\x00\x00\x42'  │ 165.0317 │   84    │    '±1.38%'     │ 0.8913 │
