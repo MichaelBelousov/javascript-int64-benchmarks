@@ -7,6 +7,8 @@
 #include <node_api.h>
 #include <napi.h>
 #include <stdexcept>
+#include <array>
+#include <tuple>
 #include <vector>
 #include <unordered_set>
 #include <unordered_map>
@@ -148,6 +150,7 @@ namespace Int64Converters {
     Uint32Array = 6,
     DoubleAsBuffer = 7,
     BigInt = 8,
+    External = 9,
   };
 
   namespace From {
@@ -210,8 +213,14 @@ namespace Int64Converters {
       const uint64_t value = jsVal.As<Napi::BigInt>().Uint64Value(&lossless);
       return value;
     }
+    // (External) => External
+    auto External(const Napi::Value& jsVal, const Napi::Value&) -> NodeId {
+      const void* pointerValue = jsVal.As<Napi::External<void>>();
+      const uint64_t value = reinterpret_cast<uint64_t&>(pointerValue);
+      return value;
+    }
 
-    static decltype(LowHighObject)* map[] = {
+    static auto map = std::array{
       LowHighObject,
       LowHighArray,
       HexString,
@@ -221,6 +230,7 @@ namespace Int64Converters {
       Uint32Array,
       DoubleAsBuffer,
       BigInt,
+      External,
     };
   };
 
@@ -286,9 +296,14 @@ namespace Int64Converters {
       const auto jsVal = Napi::BigInt::New(env, val);
       return jsVal;
     }
+    // (External) => External
+    auto External(Napi::Env env, uint64_t val) -> Napi::Value {
+      const auto jsVal = Napi::External<void>::New(env, reinterpret_cast<void*>(val));
+      return jsVal;
+    }
 
     // must be same order as enum
-    static decltype(LowHighObject)* map[] = {
+    static auto map = std::array{
       LowHighObject,
       LowHighArray,
       HexString,
@@ -298,68 +313,77 @@ namespace Int64Converters {
       Uint32Array,
       DoubleAsBuffer,
       BigInt,
+      External,
     };
   };
 };
 
-struct DoubleAsBufferMap : Napi::ObjectWrap<DoubleAsBufferMap> {
+using FromId64Func = uint64_t(const Napi::Value&, const Napi::Value&);
+using ToId64Func = Napi::Value(Napi::Env, uint64_t);
+
+template<FromId64Func from, ToId64Func to>
+struct Id64Map : Napi::ObjectWrap<Id64Map<from, to>> {
   std::unordered_map<NodeId, Napi::Reference<Napi::Value>> _map;
   static Napi::FunctionReference Constructor;
-  static void Init(Napi::Env env, Napi::Object exports) {
-    Napi::Function wrappedCtor = DefineClass(env, "DoubleAsBufferMap", {
-        InstanceMethod<&DoubleAsBufferMap::Get>("get"),
-        InstanceMethod<&DoubleAsBufferMap::Set>("set"),
+  static Napi::Value Init(Napi::Env env) {
+    Napi::Function wrappedCtor = Napi::ObjectWrap<Id64Map<from, to>>::DefineClass(env, "Id64Map", {
+        Napi::ObjectWrap<Id64Map<from, to>>::template InstanceMethod<&Id64Map<from, to>::Get>("get"),
+        Napi::ObjectWrap<Id64Map<from, to>>::template InstanceMethod<&Id64Map<from, to>::Set>("set")
     });
     Constructor = Napi::Persistent(wrappedCtor);
     Constructor.SuppressDestruct();
-    exports["DoubleAsBufferMap"] = wrappedCtor;
+    return wrappedCtor;
   }
-  DoubleAsBufferMap(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DoubleAsBufferMap>{info}, _map{} {}
-  ~DoubleAsBufferMap() {
+  Id64Map(const Napi::CallbackInfo& info) : Napi::ObjectWrap<Id64Map<from, to>>{info}, _map{} {}
+  ~Id64Map() {
     for (auto& [id, jsRef] : _map) { jsRef.Unref(); }
   }
   Napi::Value Get(const Napi::CallbackInfo& info) {
-    const auto&& key = Int64Converters::From::DoubleAsBuffer(info[0].As<Napi::Number>(), info.Env().Undefined());
+    const auto&& key = from(info[0], info[1]);
     auto&& entry = _map.find(key);
     if (entry == _map.end()) return info.Env().Undefined();
     return entry->second.Value();
   }
   Napi::Value Set(const Napi::CallbackInfo& info) {
-    const auto&& key = Int64Converters::From::DoubleAsBuffer(info[0].As<Napi::Number>(), info.Env().Undefined());
-    // TODO: this ToObject is inperfect since now the value is voxed and `typeof` won't work
+    const auto&& key = from(info[0], info[1]);
+    // TODO: this ToObject is imperfect since now the value is boxed and `typeof` won't work
+    // really would be better to store a Napi::Value somehow and only increment refcount if it happens to be an object
     auto val = Napi::Reference<Napi::Value>::New(info[2].ToObject(), 1);
     _map[key] = std::move(val); // FIXME: wut
     return info.Env().Undefined();
   }
 };
 
-Napi::FunctionReference DoubleAsBufferMap::Constructor;
+template<FromId64Func *from, ToId64Func *to>
+Napi::FunctionReference Id64Map<from, to>::Constructor;
 
-struct DoubleAsBufferSet : Napi::ObjectWrap<DoubleAsBufferSet> {
+template<FromId64Func *from, ToId64Func *to>
+struct Id64Set : Napi::ObjectWrap<Id64Set<from, to>> {
   std::unordered_set<NodeId> _set;
   static Napi::FunctionReference Constructor;
-  static void Init(Napi::Env env, Napi::Object exports) {
-    Napi::Function wrappedCtor = DefineClass(env, "DoubleAsBufferSet", {
-        InstanceMethod<&DoubleAsBufferSet::Has>("has"),
-        InstanceMethod<&DoubleAsBufferSet::Add>("add"),
+  static Napi::Value Init(Napi::Env env) {
+    Napi::Function wrappedCtor = Napi::ObjectWrap<Id64Set<from, to>>::DefineClass(env, "Id64Set", {
+        Napi::ObjectWrap<Id64Set<from, to>>::template InstanceMethod<&Id64Set<from, to>::Has>("has"),
+        Napi::ObjectWrap<Id64Set<from, to>>::template InstanceMethod<&Id64Set<from, to>::Add>("add"),
     });
     Constructor = Napi::Persistent(wrappedCtor);
     Constructor.SuppressDestruct();
-    exports["DoubleAsBufferSet"] = wrappedCtor;
+    return wrappedCtor;
   }
-  DoubleAsBufferSet(const Napi::CallbackInfo& info) : Napi::ObjectWrap<DoubleAsBufferSet>{info}, _set{} {}
+  Id64Set(const Napi::CallbackInfo& info) : Napi::ObjectWrap<Id64Set>{info}, _set{} {}
   Napi::Value Has(const Napi::CallbackInfo& info) {
-    const auto&& key = Int64Converters::From::DoubleAsBuffer(info[0].As<Napi::Number>(), info.Env().Undefined());
+    const auto&& key = from(info[0], info[1]);
     return Napi::Boolean::New(info.Env(), _set.find(key) != _set.end());
   }
   Napi::Value Add(const Napi::CallbackInfo& info) {
-    const auto&& key = Int64Converters::From::DoubleAsBuffer(info[0].As<Napi::Number>(), info.Env().Undefined());
+    const auto&& key = from(info[0], info[1]);
     _set.insert(key);
     return info.Env().Undefined();
   }
 };
 
-Napi::FunctionReference DoubleAsBufferSet::Constructor;
+template<FromId64Func *from, ToId64Func *to>
+Napi::FunctionReference Id64Set<from, to>::Constructor;
 
 Graph moduleGraph;
 NodeId moduleStart;
@@ -434,8 +458,26 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     return result;
   });
 
-  DoubleAsBufferMap::Init(env, exports);
-  DoubleAsBufferSet::Init(env, exports);
+  exports["Id64LowHighObjectMap"] = Id64Map<Int64Converters::From::LowHighObject, Int64Converters::To::LowHighObject>::Init(env);
+  exports["Id64LowHighObjectSet"] = Id64Set<Int64Converters::From::LowHighObject, Int64Converters::To::LowHighObject>::Init(env);
+  exports["Id64LowHighArrayMap"] = Id64Map<Int64Converters::From::LowHighArray, Int64Converters::To::LowHighArray>::Init(env);
+  exports["Id64LowHighArraySet"] = Id64Set<Int64Converters::From::LowHighArray, Int64Converters::To::LowHighArray>::Init(env);
+  exports["Id64HexStringMap"] = Id64Map<Int64Converters::From::HexString, Int64Converters::To::HexString>::Init(env);
+  exports["Id64HexStringSet"] = Id64Set<Int64Converters::From::HexString, Int64Converters::To::HexString>::Init(env);
+  exports["Id64Base64StringMap"] = Id64Map<Int64Converters::From::Base64String, Int64Converters::To::Base64String>::Init(env);
+  exports["Id64Base64StringSet"] = Id64Set<Int64Converters::From::Base64String, Int64Converters::To::Base64String>::Init(env);
+  exports["Id64ByteStringMap"] = Id64Map<Int64Converters::From::ByteString, Int64Converters::To::ByteString>::Init(env);
+  exports["Id64ByteStringSet"] = Id64Set<Int64Converters::From::ByteString, Int64Converters::To::ByteString>::Init(env);
+  exports["Id64TwoNumbersMap"] = Id64Map<Int64Converters::From::TwoNumbers, Int64Converters::To::TwoNumbers>::Init(env);
+  exports["Id64TwoNumbersSet"] = Id64Set<Int64Converters::From::TwoNumbers, Int64Converters::To::TwoNumbers>::Init(env);
+  exports["Id64Uint32ArrayMap"] = Id64Map<Int64Converters::From::Uint32Array, Int64Converters::To::Uint32Array>::Init(env);
+  exports["Id64Uint32ArraySet"] = Id64Set<Int64Converters::From::Uint32Array, Int64Converters::To::Uint32Array>::Init(env);
+  exports["Id64DoubleAsBufferMap"] = Id64Map<Int64Converters::From::DoubleAsBuffer, Int64Converters::To::DoubleAsBuffer>::Init(env);
+  exports["Id64DoubleAsBufferSet"] = Id64Set<Int64Converters::From::DoubleAsBuffer, Int64Converters::To::DoubleAsBuffer>::Init(env);
+  exports["Id64BigIntMap"] = Id64Map<Int64Converters::From::BigInt, Int64Converters::To::BigInt>::Init(env);
+  exports["Id64BigIntSet"] = Id64Set<Int64Converters::From::BigInt, Int64Converters::To::BigInt>::Init(env);
+  exports["Id64ExternalMap"] = Id64Map<Int64Converters::From::External, Int64Converters::To::External>::Init(env);
+  exports["Id64ExternalSet"] = Id64Set<Int64Converters::From::External, Int64Converters::To::External>::Init(env);
 
   return exports;
 }

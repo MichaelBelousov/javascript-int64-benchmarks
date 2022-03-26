@@ -17,8 +17,13 @@ export enum Id64ArgKind {
   Uint32Array = 6,
   DoubleAsBuffer = 7,
   BigInt = 8,
+  External = 9,
   // TODO: BigInt64Array
 }
+
+/** unique type to represent Napi::External object */
+const NapiExternal = Symbol("napi-external");
+type NapiExternal = typeof NapiExternal;
 
 export namespace Id64Args {
   export type LowHighObject = [{ low: number, high: number }, void];
@@ -30,6 +35,7 @@ export namespace Id64Args {
   export type Uint32Array = [Uint32Array, void];
   export type DoubleAsBuffer = [number, void];
   export type BigInt = [bigint, void];
+  export type External = [NapiExternal, void];
 }
 
 export type Id64Arg =
@@ -42,6 +48,7 @@ export type Id64Arg =
   | Id64Args.Uint32Array
   | Id64Args.DoubleAsBuffer
   | Id64Args.BigInt
+  | Id64Args.External
 ;
 
 export type IdArgsFor<Kind> =
@@ -54,6 +61,7 @@ export type IdArgsFor<Kind> =
   : Kind extends Id64ArgKind.Uint32Array ? Id64Args.Uint32Array
   : Kind extends Id64ArgKind.DoubleAsBuffer ? Id64Args.DoubleAsBuffer
   : Kind extends Id64ArgKind.BigInt ? Id64Args.BigInt
+  : Kind extends Id64ArgKind.BigInt ? Id64Args.External
   //: Kind extends Id64ArgKind ? Id64Arg
   : never;
 ;
@@ -73,6 +81,7 @@ export const getNeighbors: {
   (kind: Id64ArgKind.Uint32Array,    ...id: Id64Args.Uint32Array):    MaybeHighBitArray<Id64Args.Uint32Array>;
   (kind: Id64ArgKind.DoubleAsBuffer, ...id: Id64Args.DoubleAsBuffer): MaybeHighBitArray<Id64Args.DoubleAsBuffer>;
   (kind: Id64ArgKind.BigInt,         ...id: Id64Args.BigInt):         MaybeHighBitArray<Id64Args.BigInt>;
+  (kind: Id64ArgKind.External,       ...id: Id64Args.External):     MaybeHighBitArray<Id64Args.External>;
   // generic case
   (kind: Id64ArgKind, ...id: Id64Arg): MaybeHighBitArray<Id64Arg>;
 } = nativeBindings.getNeighbors;
@@ -87,6 +96,7 @@ export const getNodes: {
   (kind: Id64ArgKind.Uint32Array   ): MaybeHighBitArray<Id64Args.Uint32Array>;
   (kind: Id64ArgKind.DoubleAsBuffer): MaybeHighBitArray<Id64Args.DoubleAsBuffer>;
   (kind: Id64ArgKind.BigInt        ): MaybeHighBitArray<Id64Args.BigInt>;
+  (kind: Id64ArgKind.External      ): MaybeHighBitArray<Id64Args.External>;
   // generic case
   (kind: Id64ArgKind): MaybeHighBitArray<Id64Arg>;
 } = nativeBindings.getNodes;
@@ -120,6 +130,7 @@ export function eq(...[kind, l, lExtra, r, rExtra]:
   | [Id64ArgKind.Uint32Array,   ...Id64Args.Uint32Array, ...Id64Args.Uint32Array]
   | [Id64ArgKind.DoubleAsBuffer,...Id64Args.DoubleAsBuffer, ...Id64Args.DoubleAsBuffer]
   | [Id64ArgKind.BigInt,        ...Id64Args.BigInt, ...Id64Args.BigInt]
+  | [Id64ArgKind.External,      ...Id64Args.External, ...Id64Args.External]
 ): boolean {
   switch (kind) {
     case Id64ArgKind.LowHighObject:
@@ -144,20 +155,33 @@ export const getLastHighBits
   : () => number
   = nativeBindings.getLastHighBits;
 
-interface DoubleAsBufferMap<V> {
-  get(...[k, kExtra]: Id64Args.DoubleAsBuffer): V;
-  set(...[k, kExtra, v]: [...Id64Args.DoubleAsBuffer, V]): DoubleAsBufferMap<V>;
+interface Id64NativeMap<K extends Id64Arg, V> {
+  get(...[k, kExtra]: K): V;
+  set(...[k, kExtra, v]: [...K, V]): Id64NativeMap<K, V>;
 }
 
-export const DoubleAsBufferMap: {
-  new <V>(): DoubleAsBufferMap<V>
-} = nativeBindings.DoubleAsBufferMap;
-
-interface DoubleAsBufferSet<V> {
-  has(...[k, kExtra]: Id64Args.DoubleAsBuffer): boolean;
-  add(...[k, kExtra]: Id64Args.DoubleAsBuffer): DoubleAsBufferSet<V>;
+interface Id64NativeSet<K extends Id64Arg, V> {
+  has(...[k, kExtra]: K): boolean;
+  add(...[k, kExtra]: K): Id64NativeSet<K, V>;
 }
 
-export const DoubleAsBufferSet: {
-  new <V>(): DoubleAsBufferSet<V>
-} = nativeBindings.DoubleAsBufferSet;
+export const Id64LowHighObjectMap: { new<V>(): Id64NativeMap<Id64Args.LowHighObject, V> } = nativeBindings.Id64LowHighObjectMap;
+export const Id64LowHighObjectSet: { new<V>(): Id64NativeSet<Id64Args.LowHighObject, V> } = nativeBindings.Id64LowHighObjectSet;
+export const Id64LowHighArrayMap: { new<V>(): Id64NativeMap<Id64Args.LowHighArray, V> } = nativeBindings.Id64LowHighArrayMap;
+export const Id64LowHighArraySet: { new<V>(): Id64NativeSet<Id64Args.LowHighArray, V> } = nativeBindings.Id64LowHighArraySet;
+export const Id64HexStringMap: { new<V>(): Id64NativeMap<Id64Args.HexString, V> } = nativeBindings.Id64HexStringMap;
+export const Id64HexStringSet: { new<V>(): Id64NativeSet<Id64Args.HexString, V> } = nativeBindings.Id64HexStringSet;
+export const Id64Base64StringMap: { new<V>(): Id64NativeMap<Id64Args.Base64String, V> } = nativeBindings.Id64Base64StringMap;
+export const Id64Base64StringSet: { new<V>(): Id64NativeSet<Id64Args.Base64String, V> } = nativeBindings.Id64Base64StringSet;
+export const Id64ByteStringMap: { new<V>(): Id64NativeMap<Id64Args.ByteString, V> } = nativeBindings.Id64ByteStringMap;
+export const Id64ByteStringSet: { new<V>(): Id64NativeSet<Id64Args.ByteString, V> } = nativeBindings.Id64ByteStringSet;
+export const Id64TwoNumbersMap: { new<V>(): Id64NativeMap<Id64Args.TwoNumbers, V> } = nativeBindings.Id64TwoNumbersMap;
+export const Id64TwoNumbersSet: { new<V>(): Id64NativeSet<Id64Args.TwoNumbers, V> } = nativeBindings.Id64TwoNumbersSet;
+export const Id64Uint32ArrayMap: { new<V>(): Id64NativeMap<Id64Args.Uint32Array, V> } = nativeBindings.Id64Uint32ArrayMap;
+export const Id64Uint32ArraySet: { new<V>(): Id64NativeSet<Id64Args.Uint32Array, V> } = nativeBindings.Id64Uint32ArraySet;
+export const Id64DoubleAsBufferMap: { new<V>(): Id64NativeMap<Id64Args.DoubleAsBuffer, V> } = nativeBindings.Id64DoubleAsBufferMap;
+export const Id64DoubleAsBufferSet: { new<V>(): Id64NativeSet<Id64Args.DoubleAsBuffer, V> } = nativeBindings.Id64DoubleAsBufferSet;
+export const Id64BigIntMap: { new<V>(): Id64NativeMap<Id64Args.BigInt, V> } = nativeBindings.Id64BigIntMap;
+export const Id64BigIntSet: { new<V>(): Id64NativeSet<Id64Args.BigInt, V> } = nativeBindings.Id64BigIntSet;
+export const Id64ExternalMap: { new<V>(): Id64NativeMap<Id64Args.External, V> } = nativeBindings.Id64ExternalMap;
+export const Id64ExternalSet: { new<V>(): Id64NativeSet<Id64Args.External, V> } = nativeBindings.Id64ExternalSet;

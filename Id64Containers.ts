@@ -1,5 +1,5 @@
 // TODO: probably should make Int64/Id64 names consistent
-import { DoubleAsBufferMap, DoubleAsBufferSet, Id64Arg, Id64ArgKind, Id64Args } from "./addon";
+import { Id64Arg, Id64ArgKind, Id64Args, Id64DoubleAsBufferMap, Id64DoubleAsBufferSet, Id64ExternalMap, Id64ExternalSet } from "./addon";
 
 export interface Id64Map<K extends Id64Arg, V> /* extends Pick<Map<K, V>, "get" | "set"> */ {
   get(k: K[0], kExtra: K[1]): V | undefined;
@@ -70,7 +70,8 @@ export function MakeIdMapClass<V>(
     case Id64ArgKind.BigInt:
       return Map;
     case Id64ArgKind.TwoNumbers: return LayeredMap;
-    case Id64ArgKind.DoubleAsBuffer: return DoubleAsBufferMap;
+    case Id64ArgKind.DoubleAsBuffer: return Id64DoubleAsBufferMap;
+    case Id64ArgKind.External: return Id64ExternalMap;
   }
 }
 
@@ -143,6 +144,7 @@ export function MakeIdSetClass<V>(
     case Id64ArgKind.BigInt:
       return Set;
     case Id64ArgKind.TwoNumbers: return LayeredSet;
-    case Id64ArgKind.DoubleAsBuffer: return DoubleAsBufferSet;
+    case Id64ArgKind.DoubleAsBuffer: return Id64DoubleAsBufferSet;
+    case Id64ArgKind.External: return Id64ExternalSet;
   }
 }

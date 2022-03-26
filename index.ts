@@ -1,11 +1,18 @@
 import * as Benchmark from "benchmark";
 import { Id64ArgKind, Id64Arg, getNeighbors, Id64Args, getNodes, MaybeHighBitArray, IdArgsFor, nativeDjikstras } from "./addon";
-//import Heap from "heap";
 const Heap = require("heap"); // wasn't working for some reason
 import { MakeIdMapClass, MakeIdSetClass } from "./Id64Containers";
 const os = require("os");
 
 const suite = new Benchmark.Suite("Int64 interop JavaScript");
+
+declare module "benchmark" {
+  // TODO: need to use an external module to get access to this on the default export
+  // https://stackoverflow.com/questions/39189665/augment-external-module-that-exports-default
+  export interface Options {
+    note?: string;
+  }
+}
 
 function djikstras(
   kind:
@@ -18,6 +25,7 @@ function djikstras(
   | Id64ArgKind.Uint32Array
   | Id64ArgKind.DoubleAsBuffer
   | Id64ArgKind.BigInt
+  | Id64ArgKind.External
 ) {
   type Kind =  typeof kind;
   type Type = IdArgsFor<Kind>;
@@ -99,9 +107,16 @@ suite
   // instead of JavaScript's map, due to limitations of comparing NaNs in JavaScript
   .add("use 64-bit number as an 8-byte buffer", function() {
     djikstras(Id64ArgKind.DoubleAsBuffer);
+  }, {
+    note: "uses a custom native map with object coercion, so not comparable"
   })
   .add("use BigInt", function() {
     djikstras(Id64ArgKind.BigInt);
+  })
+  .add("use External", function() {
+    djikstras(Id64ArgKind.External);
+  }, {
+    note: "uses a custom native map with object coercion, so not comparable"
   })
   //.add("use 64-bit number as an 8-byte buffer, native equality check only", function() {})
   .on("cycle", function(event: Benchmark.Event) {
@@ -123,7 +138,8 @@ suite
             "ops/s": Number(fmter.format(cur.hz)),
             samples: cur.stats.sample.length,
             "margin of error": `±${Number(cur.stats.rme).toFixed(2)}%`,
-            ratio: Number(fmter.format(cur.hz / maxHz))
+            ratio: Number(fmter.format(cur.hz / maxHz)),
+            note: (cur as any).note,
           },
           prev
         ), {})
