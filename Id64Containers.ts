@@ -1,5 +1,29 @@
 // TODO: probably should make Int64/Id64 names consistent
-import { Id64Arg, Id64ArgKind, Id64Args, Id64DoubleAsBufferMap, Id64DoubleAsBufferSet, Id64ExternalMap, Id64ExternalSet } from "./addon";
+import {
+  Id64DoubleAsBufferMap,
+  Id64DoubleAsBufferSet,
+  Id64Arg,
+  Id64ArgKind,
+  Id64Args,
+  Id64HexStringSet,
+  Id64Base64StringSet,
+  Id64ByteStringSet,
+  Id64BigIntSet,
+  Id64ExternalSet,
+  Id64TwoNumbersSet,
+  Id64Uint32ArraySet,
+  Id64LowHighArraySet,
+  Id64LowHighObjectSet,
+  Id64Base64StringMap,
+  Id64BigIntMap,
+  Id64ByteStringMap,
+  Id64ExternalMap,
+  Id64HexStringMap,
+  Id64LowHighArrayMap,
+  Id64LowHighObjectMap,
+  Id64TwoNumbersMap,
+  Id64Uint32ArrayMap,
+} from "./addon";
 
 export interface Id64Map<K extends Id64Arg, V> /* extends Pick<Map<K, V>, "get" | "set"> */ {
   get(k: K[0], kExtra: K[1]): V | undefined;
@@ -15,63 +39,33 @@ export function MakeIdMapClass<V>(kind: Id64ArgKind.TwoNumbers    ): new() => Id
 export function MakeIdMapClass<V>(kind: Id64ArgKind.Uint32Array   ): new() => Id64Map<Id64Args.Uint32Array,     V>;
 export function MakeIdMapClass<V>(kind: Id64ArgKind.DoubleAsBuffer): new() => Id64Map<Id64Args.DoubleAsBuffer,  V>;
 export function MakeIdMapClass<V>(kind: Id64ArgKind.BigInt        ): new() => Id64Map<Id64Args.BigInt,          V>;
+export function MakeIdMapClass<V>(kind: Id64ArgKind.External      ): new() => Id64Map<Id64Args.External,        V>;
 // overload for the generic case
 export function MakeIdMapClass<V>(kind: Id64ArgKind): new() => Id64Map<Id64Arg, V>;
 export function MakeIdMapClass<V>(
   kind: Id64ArgKind
 ): new() => Id64Map<Id64Arg, V> {
-  class LayeredMap {
-    _map = new Map<number, Map<number, V>>();
-    get(l: number, r: number): V | undefined {
-      let submap = this._map.get(l);
-      if (submap === undefined) {
-        submap = new Map<number, V>();
-        this._map.set(l, submap);
-      }
-      return submap.get(r);
-    }
-    set(l: number, r: number, val: V): this {
-      let submap = this._map.get(l);
-      if (submap === undefined) {
-        submap = new Map<number, V>();
-        this._map.set(l, submap);
-      }
-      submap.set(r, val);
-      return this;
-    }
-  }
   switch (kind) {
     case Id64ArgKind.LowHighObject:
-      return class LowHighObjectMap implements Id64Map<Id64Args.LowHighObject, V> {
-        _map = new LayeredMap();
-        get(...[k]: Id64Args.LowHighObject): V | undefined {
-          return this._map.get(k.low, k.high);
-        }
-        set(...[k, _kExtra, v]: [...Id64Args.LowHighObject, V]): Id64Map<Id64Args.LowHighObject, V> {
-          this._map.set(k.low, k.high, v);
-          return this;
-        }
-      };
+      return Id64LowHighObjectMap;
     case Id64ArgKind.LowHighArray:
+      return Id64LowHighArrayMap;
     case Id64ArgKind.Uint32Array:
-      return class LowHighArrayMap implements Id64Map<Id64Args.LowHighArray, V> {
-        _map = new LayeredMap();
-        get(...[k]: Id64Args.LowHighArray): V | undefined {
-          return this._map.get(k[0], k[1]);
-        }
-        set(...[k, _kExtra, val]: [...Id64Args.LowHighArray, V]): Id64Map<Id64Args.LowHighArray, V> {
-          this._map.set(k[0], k[1], val);
-          return this;
-        }
-      };
+      return Id64Uint32ArrayMap;
     case Id64ArgKind.HexString:
+      return Id64HexStringMap;
     case Id64ArgKind.Base64String:
+      return Id64Base64StringMap;
     case Id64ArgKind.ByteString:
+      return Id64ByteStringMap;
     case Id64ArgKind.BigInt:
-      return Map;
-    case Id64ArgKind.TwoNumbers: return LayeredMap;
-    case Id64ArgKind.DoubleAsBuffer: return Id64DoubleAsBufferMap;
-    case Id64ArgKind.External: return Id64ExternalMap;
+      return Id64BigIntMap;
+    case Id64ArgKind.External:
+      return Id64ExternalMap;
+    case Id64ArgKind.TwoNumbers:
+      return Id64TwoNumbersMap;
+    case Id64ArgKind.DoubleAsBuffer:
+      return Id64DoubleAsBufferMap;
   }
 }
 
@@ -89,62 +83,32 @@ export function MakeIdSetClass<V>(kind: Id64ArgKind.TwoNumbers    ): new() => Id
 export function MakeIdSetClass<V>(kind: Id64ArgKind.Uint32Array   ): new() => Id64Set<Id64Args.Uint32Array>;
 export function MakeIdSetClass<V>(kind: Id64ArgKind.DoubleAsBuffer): new() => Id64Set<Id64Args.DoubleAsBuffer>;
 export function MakeIdSetClass<V>(kind: Id64ArgKind.BigInt        ): new() => Id64Set<Id64Args.BigInt>;
+export function MakeIdSetClass<V>(kind: Id64ArgKind.External      ): new() => Id64Set<Id64Args.External>;
 // overload for the generic case
 export function MakeIdSetClass<V>(kind: Id64ArgKind): new() => Id64Set<Id64Arg>;
 export function MakeIdSetClass<V>(
   kind: Id64ArgKind
 ): new() => Id64Set<Id64Arg> {
-  class LayeredSet {
-    _map = new Map<number, Set<number>>();
-    has(l: number, r: number): boolean {
-      let subset = this._map.get(l);
-      if (subset === undefined) {
-        subset = new Set<number>();
-        this._map.set(l, subset);
-      }
-      return subset.has(r);
-    }
-    add(l: number, r: number): this {
-      let subset = this._map.get(l);
-      if (subset === undefined) {
-        subset = new Set<number>();
-        this._map.set(l, subset);
-      }
-      subset.add(r);
-      return this;
-    }
-  }
   switch (kind) {
     case Id64ArgKind.LowHighObject:
-      return class LowHighObjectSet implements Id64Set<Id64Args.LowHighObject> {
-        _set = new LayeredSet();
-        has(...[k]: Id64Args.LowHighObject): boolean {
-          return this._set.has(k.low, k.high);
-        }
-        add(...[k]: Id64Args.LowHighObject): Id64Set<Id64Args.LowHighObject> {
-          this._set.add(k.low, k.high);
-          return this;
-        }
-      }
+      return Id64LowHighObjectSet;
     case Id64ArgKind.LowHighArray:
+      return Id64LowHighArraySet;
     case Id64ArgKind.Uint32Array:
-      return class LowHighArraySet implements Id64Set<Id64Args.LowHighArray> {
-        _set = new LayeredSet();
-        has(...[k]: Id64Args.LowHighArray): boolean {
-          return this._set.has(k[0], k[1]);
-        }
-        add(...[k]: Id64Args.LowHighArray): Id64Set<Id64Args.LowHighArray> {
-          this._set.add(k[0], k[1]);
-          return this;
-        }
-      }
+      return Id64Uint32ArraySet;
     case Id64ArgKind.HexString:
+      return Id64HexStringSet;
     case Id64ArgKind.Base64String:
+      return Id64Base64StringSet;
     case Id64ArgKind.ByteString:
+      return Id64ByteStringSet;
     case Id64ArgKind.BigInt:
-      return Set;
-    case Id64ArgKind.TwoNumbers: return LayeredSet;
-    case Id64ArgKind.DoubleAsBuffer: return Id64DoubleAsBufferSet;
-    case Id64ArgKind.External: return Id64ExternalSet;
+      return Id64BigIntSet;
+    case Id64ArgKind.External:
+      return Id64ExternalSet;
+    case Id64ArgKind.TwoNumbers:
+      return Id64TwoNumbersSet;
+    case Id64ArgKind.DoubleAsBuffer:
+      return Id64DoubleAsBufferSet;
   }
 }
