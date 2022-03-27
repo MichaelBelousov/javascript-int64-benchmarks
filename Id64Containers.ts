@@ -68,7 +68,16 @@ export function MakeIdMapClass<V>(
     case Id64ArgKind.Base64String:
     case Id64ArgKind.ByteString:
     case Id64ArgKind.BigInt:
-      return Map;
+      return class TwoArgMap {
+        _map = new Map();
+        get(...[k]: Id64Arg): V | undefined {
+          return this._map.get(k);
+        }
+        set(...[k, _kExtra, val]: [...Id64Args.LowHighArray, V]): TwoArgMap {
+          this._map.set(k, val);
+          return this;
+        }
+      };
     case Id64ArgKind.TwoNumbers: return LayeredMap;
     case Id64ArgKind.DoubleAsBuffer: return Id64DoubleAsBufferMap;
     case Id64ArgKind.External: return Id64ExternalMap;

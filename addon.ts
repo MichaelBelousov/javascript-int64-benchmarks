@@ -67,9 +67,9 @@ export type IdArgsFor<Kind> =
 ;
 
 
-export type MaybeHighBitArray<T> = T extends Id64Args.TwoNumbers
+export type MaybeHighBitArray<T extends Id64Arg> = T extends Id64Args.TwoNumbers
   ? number[] & { highBits: number[] }
-  : T[];
+  : T[0][];
 
 export const getNeighbors: {
   (kind: Id64ArgKind.LowHighObject,  ...id: Id64Args.LowHighObject):  MaybeHighBitArray<Id64Args.LowHighObject>;
@@ -81,7 +81,7 @@ export const getNeighbors: {
   (kind: Id64ArgKind.Uint32Array,    ...id: Id64Args.Uint32Array):    MaybeHighBitArray<Id64Args.Uint32Array>;
   (kind: Id64ArgKind.DoubleAsBuffer, ...id: Id64Args.DoubleAsBuffer): MaybeHighBitArray<Id64Args.DoubleAsBuffer>;
   (kind: Id64ArgKind.BigInt,         ...id: Id64Args.BigInt):         MaybeHighBitArray<Id64Args.BigInt>;
-  (kind: Id64ArgKind.External,       ...id: Id64Args.External):     MaybeHighBitArray<Id64Args.External>;
+  (kind: Id64ArgKind.External,       ...id: Id64Args.External):       MaybeHighBitArray<Id64Args.External>;
   // generic case
   (kind: Id64ArgKind, ...id: Id64Arg): MaybeHighBitArray<Id64Arg>;
 } = nativeBindings.getNeighbors;

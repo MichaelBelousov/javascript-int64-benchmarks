@@ -14,6 +14,10 @@ declare module "benchmark" {
   }
 }
 
+type Distance = number;
+
+let expectedDistances: Distance[] | undefined;
+
 function djikstras(
   kind:
   | Id64ArgKind.LowHighObject
@@ -30,7 +34,7 @@ function djikstras(
   type Kind =  typeof kind;
   type Type = IdArgsFor<Kind>;
   const predecessors = new (MakeIdMapClass<Id64Arg>(kind))();
-  const distances = new (MakeIdMapClass<Kind>(kind))();
+  const distances = new (MakeIdMapClass<Distance>(kind))();
 
   // FIXME: need a custom priority queue where we don't need to spread array args
   // WTH: why do I need to recreate the tuples for them to be spreadable :/
@@ -56,7 +60,7 @@ function djikstras(
   while(!queue.empty()) {
     const [u, uExtra] = queue.pop() as Id64Arg;
     // FIXME remove `any` usage
-    const neighbors = getNeighbors(kind, u as any, uExtra as any) as Type[0][];
+    const neighbors = getNeighbors(kind, u as any, uExtra as any);
     const maybeHighBits: number[] = (neighbors as MaybeHighBitArray<Id64Args.TwoNumbers>).highBits || [];
     for (let i = 0; i < neighbors.length; ++i) {
       const neighbor = neighbors[i];
@@ -71,6 +75,15 @@ function djikstras(
       }
     }
   }
+
+  if (process.env.DEBUG) {
+    const orderedDistances = nodes.map((node, i) => distances.get(node as Type[0], maybeHighBits[i] as Type[1])!);
+    if (expectedDistances === undefined) expectedDistances = orderedDistances;
+    else if (!orderedDistances.every((_d, i) => orderedDistances[i] === expectedDistances![i]))
+      throw Error("expected distances were different");
+  }
+
+  return;
 }
 
 const erroredBenchmarks = new Set<Benchmark>();
@@ -113,7 +126,7 @@ suite
   .add("use BigInt", function() {
     djikstras(Id64ArgKind.BigInt);
   })
-  .add("use External", function() {
+  .add("use Napi::External as an 8-byte buffer", function() {
     djikstras(Id64ArgKind.External);
   }, {
     note: "uses a custom native map with object coercion, so not comparable"
@@ -128,7 +141,7 @@ suite
     const maxHz = this.sort((a, b) => b.hz - a.hz)[0].hz;
     const fmter = new Intl.NumberFormat("en-US", {
       maximumFractionDigits: 4,
-    })
+    });
     console.log(`ran on ${os.platform()}-${os.arch()} on node ${process.version}`);
     console.table(
       this
