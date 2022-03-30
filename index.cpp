@@ -19,6 +19,8 @@
 #include <cmath>
 #include <ctime>
 
+#include <variant>
+
 
 constexpr size_t GRAPH_SIZE = 2000;
 constexpr size_t EDGES_PER_NODE = 8;
@@ -326,7 +328,8 @@ using ToId64Func = Napi::Value(Napi::Env, uint64_t);
 
 template<FromId64Func from, ToId64Func to>
 struct Id64Map : Napi::ObjectWrap<Id64Map<from, to>> {
-  std::unordered_map<NodeId, Napi::Reference<Napi::Value>> _map;
+  // NOTE: is there a better way to store both Napi::Reference and Napi::Value?
+  std::unordered_map<NodeId, std::variant<Napi::Value, Napi::Reference<Napi::Value>>> _map;
   static Napi::FunctionReference Constructor;
   static Napi::Value Init(Napi::Env env) {
     Napi::Function wrappedCtor = Napi::ObjectWrap<Id64Map<from, to>>::DefineClass(env, "Id64Map", {
@@ -339,20 +342,35 @@ struct Id64Map : Napi::ObjectWrap<Id64Map<from, to>> {
   }
   Id64Map(const Napi::CallbackInfo& info) : Napi::ObjectWrap<Id64Map<from, to>>{info}, _map{} {}
   ~Id64Map() {
-    for (auto& [id, jsRef] : _map) { jsRef.Unref(); }
+    for (auto& [id, maybeJsRef] : _map) {
+      if (std::holds_alternative<Napi::Reference<Napi::Value>>(maybeJsRef))
+        std::get<Napi::Reference<Napi::Value>>(maybeJsRef).Unref();
+    }
   }
   Napi::Value Get(const Napi::CallbackInfo& info) {
     const auto&& key = from(info[0], info[1]);
     auto&& entry = _map.find(key);
     if (entry == _map.end()) return info.Env().Undefined();
-    return entry->second.Value();
+    auto&& maybeJsVal = entry->second;
+    auto jsVal = std::holds_alternative<Napi::Reference<Napi::Value>>(maybeJsVal)
+        ? std::get<Napi::Reference<Napi::Value>>(maybeJsVal).Value()
+        : std::get<Napi::Value>(maybeJsVal);
+    auto isNum = jsVal.IsNumber();
+    auto dblVal = jsVal.ToNumber().DoubleValue();
+    auto u32Val = jsVal.ToNumber().Uint32Value();
+    auto i32Val = jsVal.ToNumber().Int32Value();
+    auto i64Val = jsVal.ToNumber().Int64Value();
+    return jsVal;
   }
   Napi::Value Set(const Napi::CallbackInfo& info) {
     const auto&& key = from(info[0], info[1]);
-    // TODO: this ToObject is imperfect since now the value is boxed and `typeof` won't work
-    // really would be better to store a Napi::Value somehow and only increment refcount if it happens to be an object
-    auto val = Napi::Reference<Napi::Value>::New(info[2].ToObject(), 1);
-    _map[key] = std::move(val); // FIXME: wut
+    if (info[2].IsObject()) {
+      auto val = Napi::Reference<Napi::Value>::New(info[2].As<Napi::Object>(), 1);
+      _map[key] = std::move(val);
+    } else {
+      auto val = info[2];
+      _map[key] = std::move(val);
+    }
     return info.Env().Undefined();
   }
 };
