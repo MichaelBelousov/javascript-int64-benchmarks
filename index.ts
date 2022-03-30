@@ -39,7 +39,7 @@ function djikstras(
   // FIXME: need a custom priority queue where we don't need to spread array args
   // WTH: why do I need to recreate the tuples for them to be spreadable :/
   function nodeDistanceCmp(l: [Type[0], Type[1]], r: [Type[0], Type[1]]): number {
-    return Number(distances.get(...l)) - Number(distances.get(...r));
+    return distances.get(...l)! - distances.get(...r)!;
   }
   const queue = new Heap(nodeDistanceCmp);
   const inQueue = new (MakeIdSetClass<Type>(kind))();
@@ -68,8 +68,8 @@ function djikstras(
       const stillInQueue = inQueue.has(neighbor, neighborExtra);
       if (!stillInQueue) continue;
       const edgeSize = 1;
-      const alt = Number(distances.get(u, uExtra)) + edgeSize;
-      if (alt < Number(distances.get(neighbor, neighborExtra))) {
+      const alt = distances.get(u, uExtra)! + edgeSize;
+      if (alt < distances.get(neighbor, neighborExtra)!) {
         distances.set(neighbor, neighborExtra, alt);
         predecessors.set(neighbor, neighborExtra, [u, uExtra] as Id64Arg);
       }
@@ -79,7 +79,7 @@ function djikstras(
   if (process.env.DEBUG) {
     const orderedDistances = nodes.map((node, i) => distances.get(node as Type[0], maybeHighBits[i] as Type[1])!);
     if (expectedDistances === undefined) expectedDistances = orderedDistances;
-    else if (!orderedDistances.every((_d, i) => Number(orderedDistances[i]) === Number(expectedDistances![i])))
+    else if (!orderedDistances.every((_d, i) => orderedDistances[i] === expectedDistances![i]))
       throw Error("expected distances were different");
   }
 
@@ -116,20 +116,20 @@ suite
   .add("do it all in native (control)", function() {
     nativeDjikstras();
   })
-  // the performance of this test is highly affected by using a native map implementation
-  // instead of JavaScript's map, due to limitations of comparing NaNs in JavaScript
+  .add("use BigInt", function() {
+    djikstras(Id64ArgKind.BigInt);
+  })
+  // the performance of these two tests is highly affected by using a native map implementation
+  // instead of JavaScript's map, due to limitations of hashing NaNs and external objects in ecmascript's Map
   .add("use 64-bit number as an 8-byte buffer", function() {
     djikstras(Id64ArgKind.DoubleAsBuffer);
   }, {
-    note: "uses a custom native map with object coercion, so not comparable"
-  })
-  .add("use BigInt", function() {
-    djikstras(Id64ArgKind.BigInt);
+    note: "has to use a custom map"
   })
   .add("use Napi::External as an 8-byte buffer", function() {
     djikstras(Id64ArgKind.External);
   }, {
-    note: "uses a custom native map with object coercion, so not comparable"
+    note: "has to use a custom map"
   })
   //.add("use 64-bit number as an 8-byte buffer, native equality check only", function() {})
   .on("cycle", function(event: Benchmark.Event) {

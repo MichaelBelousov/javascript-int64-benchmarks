@@ -220,7 +220,7 @@ namespace Int64Converters {
     }
     // (External) => External
     auto External(const Napi::Value& jsVal, const Napi::Value&) -> NodeId {
-      const void* pointerValue = jsVal.As<Napi::External<void>>();
+      const void* pointerValue = jsVal.As<Napi::External<void>>().Data();
       const uint64_t value = reinterpret_cast<uint64_t&>(pointerValue);
       return value;
     }
@@ -329,7 +329,7 @@ using ToId64Func = Napi::Value(Napi::Env, uint64_t);
 template<FromId64Func from, ToId64Func to>
 struct Id64Map : Napi::ObjectWrap<Id64Map<from, to>> {
   // NOTE: is there a better way to store both Napi::Reference and Napi::Value?
-  std::unordered_map<NodeId, std::variant<Napi::Value, Napi::Reference<Napi::Value>>> _map;
+  std::unordered_map<NodeId, std::variant<double, Napi::Reference<Napi::Value>>> _map;
   static Napi::FunctionReference Constructor;
   static Napi::Value Init(Napi::Env env) {
     Napi::Function wrappedCtor = Napi::ObjectWrap<Id64Map<from, to>>::DefineClass(env, "Id64Map", {
@@ -354,22 +354,17 @@ struct Id64Map : Napi::ObjectWrap<Id64Map<from, to>> {
     auto&& maybeJsVal = entry->second;
     auto jsVal = std::holds_alternative<Napi::Reference<Napi::Value>>(maybeJsVal)
         ? std::get<Napi::Reference<Napi::Value>>(maybeJsVal).Value()
-        : std::get<Napi::Value>(maybeJsVal);
-    auto isNum = jsVal.IsNumber();
-    auto dblVal = jsVal.ToNumber().DoubleValue();
-    auto u32Val = jsVal.ToNumber().Uint32Value();
-    auto i32Val = jsVal.ToNumber().Int32Value();
-    auto i64Val = jsVal.ToNumber().Int64Value();
+        : Napi::Number::New(info.Env(), std::get<double>(maybeJsVal));
     return jsVal;
   }
   Napi::Value Set(const Napi::CallbackInfo& info) {
     const auto&& key = from(info[0], info[1]);
-    if (info[2].IsObject()) {
-      auto val = Napi::Reference<Napi::Value>::New(info[2].As<Napi::Object>(), 1);
-      _map[key] = std::move(val);
+    if (info[2].IsNumber()) {
+      _map[key] = info[2].As<Napi::Number>().DoubleValue();
     } else {
-      auto val = info[2];
-      _map[key] = std::move(val);
+      // XXX: this will wrap primitives like strings in an object, which can be funky
+      // it does however work for the types of values used in this project
+      _map[key] = Napi::Reference<Napi::Value>::New(info[2].ToObject(), 1);
     }
     return info.Env().Undefined();
   }
