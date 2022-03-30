@@ -46,8 +46,10 @@ BuildGraphResult buildGraph(size_t size) {
   // TODO: there's probably a better way to do this
   const auto& randomUint64 = []() -> uint64_t {
     static_assert(std::numeric_limits<int>::max() == RAND_MAX, "RAND_MAX is not int32_t max");
-    const uint32_t high = std::rand();
-    const uint32_t low = std::rand();
+    const int32_t highBits = std::rand();
+    const int32_t lowBits = std::rand();
+    const uint32_t high = reinterpret_cast<const uint32_t&>(highBits);
+    const uint32_t low = reinterpret_cast<const uint32_t&>(lowBits);
     const uint64_t value = (static_cast<uint64_t>(high) << 32) | low;
     return value;
   };
@@ -181,8 +183,9 @@ namespace Int64Converters {
     }
     // ("\u0000\u0001\x00") => "\u0000\u0001\x00"
     auto ByteString(const Napi::Value& jsVal, const Napi::Value&) -> NodeId {
-      char buffer[sizeof(NodeId)];
-      napi_get_value_string_latin1(jsVal.Env(), jsVal, buffer, sizeof(buffer), nullptr);
+      char buffer[sizeof(NodeId) + 1]; // need an extra byte because napi_get_value_string_latin1 will null terminate the buffer
+      size_t resultSize;
+      napi_get_value_string_latin1(jsVal.Env(), jsVal, &buffer[0], sizeof(buffer), &resultSize);
       const NodeId value = *reinterpret_cast<const NodeId*>(&buffer);
       return value;
     }
@@ -327,8 +330,8 @@ struct Id64Map : Napi::ObjectWrap<Id64Map<from, to>> {
   static Napi::FunctionReference Constructor;
   static Napi::Value Init(Napi::Env env) {
     Napi::Function wrappedCtor = Napi::ObjectWrap<Id64Map<from, to>>::DefineClass(env, "Id64Map", {
-        Napi::ObjectWrap<Id64Map<from, to>>::template InstanceMethod<&Id64Map<from, to>::Get>("get"),
-        Napi::ObjectWrap<Id64Map<from, to>>::template InstanceMethod<&Id64Map<from, to>::Set>("set")
+      Napi::ObjectWrap<Id64Map<from, to>>::template InstanceMethod<&Id64Map<from, to>::Get>("get"),
+      Napi::ObjectWrap<Id64Map<from, to>>::template InstanceMethod<&Id64Map<from, to>::Set>("set")
     });
     Constructor = Napi::Persistent(wrappedCtor);
     Constructor.SuppressDestruct();

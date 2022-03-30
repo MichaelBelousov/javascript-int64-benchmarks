@@ -39,7 +39,7 @@ function djikstras(
   // FIXME: need a custom priority queue where we don't need to spread array args
   // WTH: why do I need to recreate the tuples for them to be spreadable :/
   function nodeDistanceCmp(l: [Type[0], Type[1]], r: [Type[0], Type[1]]): number {
-    return distances.get(...l)! - distances.get(...r)!;
+    return Number(distances.get(...l)) - Number(distances.get(...r));
   }
   const queue = new Heap(nodeDistanceCmp);
   const inQueue = new (MakeIdSetClass<Type>(kind))();
@@ -60,7 +60,7 @@ function djikstras(
   while(!queue.empty()) {
     const [u, uExtra] = queue.pop() as Id64Arg;
     // FIXME remove `any` usage
-    const neighbors = getNeighbors(kind, u as any, uExtra as any);
+    const neighbors = getNeighbors(kind, u as any, uExtra as any) as Type[0][];
     const maybeHighBits: number[] = (neighbors as MaybeHighBitArray<Id64Args.TwoNumbers>).highBits || [];
     for (let i = 0; i < neighbors.length; ++i) {
       const neighbor = neighbors[i];
@@ -68,8 +68,8 @@ function djikstras(
       const stillInQueue = inQueue.has(neighbor, neighborExtra);
       if (!stillInQueue) continue;
       const edgeSize = 1;
-      const alt = distances.get(u, uExtra)! + edgeSize;
-      if (alt < distances.get(neighbor, neighborExtra)!) {
+      const alt = Number(distances.get(u, uExtra)) + edgeSize;
+      if (alt < Number(distances.get(neighbor, neighborExtra))) {
         distances.set(neighbor, neighborExtra, alt);
         predecessors.set(neighbor, neighborExtra, [u, uExtra] as Id64Arg);
       }
@@ -79,7 +79,7 @@ function djikstras(
   if (process.env.DEBUG) {
     const orderedDistances = nodes.map((node, i) => distances.get(node as Type[0], maybeHighBits[i] as Type[1])!);
     if (expectedDistances === undefined) expectedDistances = orderedDistances;
-    else if (!orderedDistances.every((_d, i) => orderedDistances[i] === expectedDistances![i]))
+    else if (!orderedDistances.every((_d, i) => Number(orderedDistances[i]) === Number(expectedDistances![i])))
       throw Error("expected distances were different");
   }
 
