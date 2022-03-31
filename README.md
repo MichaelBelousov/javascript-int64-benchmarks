@@ -24,15 +24,15 @@ ran on linux-x64 on node v17.5.0
 ┌───────────────────────────────────────────┬──────────┬─────────┬─────────────────┬────────┬───────────────────────────┐
 │                  (index)                  │  ops/s   │ samples │ margin of error │ ratio  │           note            │
 ├───────────────────────────────────────────┼──────────┼─────────┼─────────────────┼────────┼───────────────────────────┤
-│       do it all in native (control)       │ 329.0603 │   87    │    '±4.02%'     │   1    │                           │
-│    use two number arguments everywhere    │ 75.5317  │   66    │    '±3.63%'     │ 0.2295 │                           │
-│                use BigInt                 │ 75.2404  │   64    │    '±4.14%'     │ 0.2287 │                           │
-│  use byte string: '\u{0001}\x00\x00\x42'  │ 73.5554  │   70    │    '±5.40%'     │ 0.2235 │                           │
-│ use low/high object {low: u32, high: u32} │ 33.8693  │   61    │    '±4.72%'     │ 0.1029 │                           │
-│       use low/high array [u32, u32]       │ 31.4116  │   56    │    '±3.10%'     │ 0.0955 │                           │
-│          use hex string: '0xff'           │ 29.6327  │   52    │    '±1.25%'     │ 0.0901 │                           │
-│              use Uint32Array              │ 27.7123  │   47    │    '±3.77%'     │ 0.0842 │                           │
-│  use Napi::External as an 8-byte buffer   │ 24.1303  │   46    │    '±4.79%'     │ 0.0733 │ 'has to use a custom map' │
-│   use 64-bit number as an 8-byte buffer   │ 23.6506  │   43    │    '±4.68%'     │ 0.0719 │ 'has to use a custom map' │
+│       do it all in native (control)       │ 360.5484 │   70    │    '±4.22%'     │   1    │                           │
+│  use byte string: '\u{0001}\x00\x00\x42'  │ 96.9654  │   77    │    '±1.01%'     │ 0.2689 │                           │
+│                use BigInt                 │  61.884  │   62    │    '±2.71%'     │ 0.1716 │                           │
+│    use two number arguments everywhere    │ 58.7188  │   51    │    '±5.70%'     │ 0.1629 │                           │
+│       use low/high array [u32, u32]       │ 40.4611  │   53    │    '±5.47%'     │ 0.1122 │                           │
+│ use low/high object {low: u32, high: u32} │ 32.7643  │   50    │    '±5.49%'     │ 0.0909 │                           │
+│              use Uint32Array              │ 31.9666  │   49    │    '±6.62%'     │ 0.0887 │                           │
+│          use hex string: '0xff'           │ 31.5042  │   54    │    '±2.22%'     │ 0.0874 │                           │
+│   use 64-bit number as an 8-byte buffer   │ 30.2948  │   55    │    '±4.67%'     │ 0.084  │ 'has to use a custom map' │
+│  use Napi::External as an 8-byte buffer   │ 27.1923  │   49    │    '±4.47%'     │ 0.0754 │ 'has to use a custom map' │
 └───────────────────────────────────────────┴──────────┴─────────┴─────────────────┴────────┴───────────────────────────┘
 ```
