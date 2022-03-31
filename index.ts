@@ -152,7 +152,9 @@ suite
             samples: cur.stats.sample.length,
             "margin of error": `±${Number(cur.stats.rme).toFixed(2)}%`,
             ratio: Number(fmter.format(cur.hz / maxHz)),
-            note: (cur as any).note,
+            ...(cur as any).note !== undefined && {
+              note: (cur as any).note,
+            }
           },
           prev
         ), {})
