@@ -185,3 +185,8 @@ export const Id64BigIntMap: { new<V>(): Id64NativeMap<Id64Args.BigInt, V> } = na
 export const Id64BigIntSet: { new<V>(): Id64NativeSet<Id64Args.BigInt, V> } = nativeBindings.Id64BigIntSet;
 export const Id64ExternalMap: { new<V>(): Id64NativeMap<Id64Args.External, V> } = nativeBindings.Id64ExternalMap;
 export const Id64ExternalSet: { new<V>(): Id64NativeSet<Id64Args.External, V> } = nativeBindings.Id64ExternalSet;
+
+export const convert: {
+  // generic case (untyped right now since only exposing for REPL usage)
+  (fromKind: Id64ArgKind, toKind: Id64ArgKind, ...id: Id64Arg): MaybeHighBitArray<Id64Arg>;
+} = nativeBindings.convert;

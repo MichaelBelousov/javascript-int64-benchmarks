@@ -474,6 +474,19 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     return result;
   });
 
+  exports["convert"] = Napi::Function::New(env, [](const Napi::CallbackInfo& info) -> Napi::Value {
+    const auto fromKind = static_cast<Int64Converters::Kind>(info[0].As<Napi::Number>().Uint32Value());
+    const auto toKind = static_cast<Int64Converters::Kind>(info[1].As<Napi::Number>().Uint32Value());
+
+    const auto& getter = Int64Converters::From::map[static_cast<size_t>(fromKind)];
+    const auto& setter = Int64Converters::To::map[static_cast<size_t>(toKind)];
+
+    const auto inNodeId = getter(info[2], info[3]);
+    const auto outNodeId = setter(info.Env(), inNodeId);
+
+    return outNodeId;
+  });
+
   exports["Id64LowHighObjectMap"] = Id64Map<Int64Converters::From::LowHighObject, Int64Converters::To::LowHighObject>::Init(env);
   exports["Id64LowHighObjectSet"] = Id64Set<Int64Converters::From::LowHighObject, Int64Converters::To::LowHighObject>::Init(env);
   exports["Id64LowHighArrayMap"] = Id64Map<Int64Converters::From::LowHighArray, Int64Converters::To::LowHighArray>::Init(env);
