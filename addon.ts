@@ -18,6 +18,7 @@ export enum Id64ArgKind {
   DoubleAsBuffer = 7,
   BigInt = 8,
   External = 9,
+  HalfByteString = 10,
   // TODO: BigInt64Array
 }
 
@@ -36,6 +37,7 @@ export namespace Id64Args {
   export type DoubleAsBuffer = [number, void];
   export type BigInt = [bigint, void];
   export type External = [NapiExternal, void];
+  export type HalfByteString = [string, void];
 }
 
 export type Id64Arg =
@@ -49,6 +51,7 @@ export type Id64Arg =
   | Id64Args.DoubleAsBuffer
   | Id64Args.BigInt
   | Id64Args.External
+  | Id64Args.HalfByteString
 ;
 
 export type IdArgsFor<Kind> =
@@ -61,7 +64,8 @@ export type IdArgsFor<Kind> =
   : Kind extends Id64ArgKind.Uint32Array ? Id64Args.Uint32Array
   : Kind extends Id64ArgKind.DoubleAsBuffer ? Id64Args.DoubleAsBuffer
   : Kind extends Id64ArgKind.BigInt ? Id64Args.BigInt
-  : Kind extends Id64ArgKind.BigInt ? Id64Args.External
+  : Kind extends Id64ArgKind.External ? Id64Args.External
+  : Kind extends Id64ArgKind.HalfByteString ? Id64Args.HalfByteString
   //: Kind extends Id64ArgKind ? Id64Arg
   : never;
 ;
@@ -82,6 +86,7 @@ export const getNeighbors: {
   (kind: Id64ArgKind.DoubleAsBuffer, ...id: Id64Args.DoubleAsBuffer): MaybeHighBitArray<Id64Args.DoubleAsBuffer>;
   (kind: Id64ArgKind.BigInt,         ...id: Id64Args.BigInt):         MaybeHighBitArray<Id64Args.BigInt>;
   (kind: Id64ArgKind.External,       ...id: Id64Args.External):       MaybeHighBitArray<Id64Args.External>;
+  (kind: Id64ArgKind.HalfByteString, ...id: Id64Args.HalfByteString): MaybeHighBitArray<Id64Args.HalfByteString>;
   // generic case
   (kind: Id64ArgKind, ...id: Id64Arg): MaybeHighBitArray<Id64Arg>;
 } = nativeBindings.getNeighbors;
@@ -97,6 +102,7 @@ export const getNodes: {
   (kind: Id64ArgKind.DoubleAsBuffer): MaybeHighBitArray<Id64Args.DoubleAsBuffer>;
   (kind: Id64ArgKind.BigInt        ): MaybeHighBitArray<Id64Args.BigInt>;
   (kind: Id64ArgKind.External      ): MaybeHighBitArray<Id64Args.External>;
+  (kind: Id64ArgKind.HalfByteString): MaybeHighBitArray<Id64Args.HalfByteString>;
   // generic case
   (kind: Id64ArgKind): MaybeHighBitArray<Id64Arg>;
 } = nativeBindings.getNodes;
@@ -131,6 +137,7 @@ export function eq(...[kind, l, lExtra, r, rExtra]:
   | [Id64ArgKind.DoubleAsBuffer,...Id64Args.DoubleAsBuffer, ...Id64Args.DoubleAsBuffer]
   | [Id64ArgKind.BigInt,        ...Id64Args.BigInt, ...Id64Args.BigInt]
   | [Id64ArgKind.External,      ...Id64Args.External, ...Id64Args.External]
+  | [Id64ArgKind.HalfByteString,...Id64Args.HalfByteString, ...Id64Args.HalfByteString]
 ): boolean {
   switch (kind) {
     case Id64ArgKind.LowHighObject:
@@ -185,6 +192,8 @@ export const Id64BigIntMap: { new<V>(): Id64NativeMap<Id64Args.BigInt, V> } = na
 export const Id64BigIntSet: { new<V>(): Id64NativeSet<Id64Args.BigInt, V> } = nativeBindings.Id64BigIntSet;
 export const Id64ExternalMap: { new<V>(): Id64NativeMap<Id64Args.External, V> } = nativeBindings.Id64ExternalMap;
 export const Id64ExternalSet: { new<V>(): Id64NativeSet<Id64Args.External, V> } = nativeBindings.Id64ExternalSet;
+export const Id64HalfByteStringMap: { new<V>(): Id64NativeMap<Id64Args.HalfByteString, V> } = nativeBindings.Id64HalfByteStringMap;
+export const Id64HalfByteStringSet: { new<V>(): Id64NativeSet<Id64Args.HalfByteString, V> } = nativeBindings.Id64HalfByteStringSet;
 
 export const convert: {
   // generic case (untyped right now since only exposing for REPL usage)

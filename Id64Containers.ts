@@ -68,6 +68,7 @@ export function MakeIdMapClass<V>(
     case Id64ArgKind.Base64String:
     case Id64ArgKind.ByteString:
     case Id64ArgKind.BigInt:
+    case Id64ArgKind.HalfByteString:
       return class TwoArgMap {
         _map = new Map();
         get(...[k]: Id64Arg): V | undefined {
@@ -151,6 +152,7 @@ export function MakeIdSetClass<V>(
     case Id64ArgKind.Base64String:
     case Id64ArgKind.ByteString:
     case Id64ArgKind.BigInt:
+    case Id64ArgKind.HalfByteString:
       return Set;
     case Id64ArgKind.TwoNumbers: return LayeredSet;
     case Id64ArgKind.DoubleAsBuffer: return Id64DoubleAsBufferSet;

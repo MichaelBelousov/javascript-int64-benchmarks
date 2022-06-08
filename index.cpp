@@ -21,7 +21,6 @@
 
 #include <variant>
 
-
 constexpr size_t GRAPH_SIZE = 2000;
 constexpr size_t EDGES_PER_NODE = 8;
 
@@ -155,6 +154,7 @@ namespace Int64Converters {
     DoubleAsBuffer = 7,
     BigInt = 8,
     External = 9,
+    HalfByteString = 10,
   };
 
   namespace From {
@@ -224,6 +224,19 @@ namespace Int64Converters {
       const uint64_t value = reinterpret_cast<uint64_t&>(pointerValue);
       return value;
     }
+    // nibble string?
+    // NOTE: \xFF isn't valid json
+    // (\x00\xff) => \x00\xff
+    auto HalfByteString(const Napi::Value& jsVal, const Napi::Value&) -> NodeId {
+      const std::string&& arg1 = jsVal.As<Napi::String>().Utf8Value();
+      NodeId value;
+      // assert arg.size == 16
+      if (arg1.size() < 16) throw std::runtime_error("bad id size");
+      for (size_t i = 0; i < sizeof(value); ++i) {
+        reinterpret_cast<unsigned char*>(&value)[i] = (static_cast<unsigned char>(arg1[2*i+1]) << 4) | arg1[2*i];
+      }
+      return value;
+    }
 
     static auto map = std::array{
       LowHighObject,
@@ -236,6 +249,7 @@ namespace Int64Converters {
       DoubleAsBuffer,
       BigInt,
       External,
+      HalfByteString,
     };
   };
 
@@ -307,6 +321,19 @@ namespace Int64Converters {
       return jsVal;
     }
 
+    // NOTE: \xFF isn't valid json
+    // (\x00\xff) => \x00\xff
+    auto HalfByteString(Napi::Env env, uint64_t val) -> Napi::Value {
+      constexpr size_t buffSize = sizeof(uint64_t) * 2 + 1;
+      char buffer[buffSize];
+      buffer[buffSize - 1] = '\0';
+      for (size_t i = 0; i < sizeof(val); ++i) {
+        reinterpret_cast<unsigned char&>(buffer[2*i]) = reinterpret_cast<char*>(&val)[i] & 0xf;
+        reinterpret_cast<unsigned char&>(buffer[2*i+1]) = reinterpret_cast<unsigned char*>(&val)[i] >> 4;
+      }
+      return Napi::String::New(env, buffer, buffSize);
+    }
+
     // must be same order as enum
     static auto map = std::array{
       LowHighObject,
@@ -319,6 +346,7 @@ namespace Int64Converters {
       DoubleAsBuffer,
       BigInt,
       External,
+      HalfByteString,
     };
   };
 };
@@ -507,6 +535,8 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   exports["Id64BigIntSet"] = Id64Set<Int64Converters::From::BigInt, Int64Converters::To::BigInt>::Init(env);
   exports["Id64ExternalMap"] = Id64Map<Int64Converters::From::External, Int64Converters::To::External>::Init(env);
   exports["Id64ExternalSet"] = Id64Set<Int64Converters::From::External, Int64Converters::To::External>::Init(env);
+  exports["Id64HalfByteStringMap"] = Id64Map<Int64Converters::From::HalfByteString, Int64Converters::To::HalfByteString>::Init(env);
+  exports["Id64HalfByteStringSet"] = Id64Set<Int64Converters::From::HalfByteString, Int64Converters::To::HalfByteString>::Init(env);
 
   return exports;
 }

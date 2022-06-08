@@ -30,6 +30,7 @@ function djikstras(
   | Id64ArgKind.DoubleAsBuffer
   | Id64ArgKind.BigInt
   | Id64ArgKind.External
+  | Id64ArgKind.HalfByteString
 ) {
   type Kind =  typeof kind;
   type Type = IdArgsFor<Kind>;
@@ -97,6 +98,8 @@ suite
   })
   .add("use hex string: '0xff'", function() {
     djikstras(Id64ArgKind.HexString);
+  }, {
+    note: "uses slow C++ stringstream"
   })
   // not implemented
   //.add("use unprefixed hex string: 'ff'", function() {})
@@ -130,6 +133,9 @@ suite
     djikstras(Id64ArgKind.External);
   }, {
     note: "has to use a custom map"
+  })
+  .add("use half byte encoded string: '\\x00SF\\xfc&\\x11'", function() {
+    djikstras(Id64ArgKind.HalfByteString);
   })
   //.add("use 64-bit number as an 8-byte buffer, native equality check only", function() {})
   .on("cycle", function(event: Benchmark.Event) {
