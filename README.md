@@ -20,19 +20,39 @@ Goals are:
 Last generated on my 6-core i7-8850H@2.60GHz on node v12.22.7
 
 ```results
-ran on linux-x64 on node v17.5.0
-┌───────────────────────────────────────────┬──────────┬─────────┬─────────────────┬────────┬───────────────────────────┐
-│                  (index)                  │  ops/s   │ samples │ margin of error │ ratio  │           note            │
-├───────────────────────────────────────────┼──────────┼─────────┼─────────────────┼────────┼───────────────────────────┤
-│       do it all in native (control)       │ 360.5484 │   70    │    '±4.22%'     │   1    │                           │
-│  use byte string: '\u{0001}\x00\x00\x42'  │ 96.9654  │   77    │    '±1.01%'     │ 0.2689 │                           │
-│                use BigInt                 │  61.884  │   62    │    '±2.71%'     │ 0.1716 │                           │
-│    use two number arguments everywhere    │ 58.7188  │   51    │    '±5.70%'     │ 0.1629 │                           │
-│       use low/high array [u32, u32]       │ 40.4611  │   53    │    '±5.47%'     │ 0.1122 │                           │
-│ use low/high object {low: u32, high: u32} │ 32.7643  │   50    │    '±5.49%'     │ 0.0909 │                           │
-│              use Uint32Array              │ 31.9666  │   49    │    '±6.62%'     │ 0.0887 │                           │
-│          use hex string: '0xff'           │ 31.5042  │   54    │    '±2.22%'     │ 0.0874 │                           │
-│   use 64-bit number as an 8-byte buffer   │ 30.2948  │   55    │    '±4.67%'     │ 0.084  │ 'has to use a custom map' │
-│  use Napi::External as an 8-byte buffer   │ 27.1923  │   49    │    '±4.47%'     │ 0.0754 │ 'has to use a custom map' │
-└───────────────────────────────────────────┴──────────┴─────────┴─────────────────┴────────┴───────────────────────────┘
+ran on linux-x64 on node v18.14.0
+┌─────────────────────────────────────────────────┬──────────┬─────────┬─────────────────┬────────┬─────────────────────────────────────────┐
+│                     (index)                     │  ops/s   │ samples │ margin of error │ ratio  │                  note                   │
+├─────────────────────────────────────────────────┼──────────┼─────────┼─────────────────┼────────┼─────────────────────────────────────────┤
+│          do it all in native (control)          │ 307.7858 │   65    │    '±2.85%'     │   1    │                                         │
+│ use half byte encoded string: '\x00SF\xfc&\x11' │ 71.5697  │   63    │    '±4.61%'     │ 0.2325 │                                         │
+│     use byte string: '\u{0001}\x00\x00\x42'     │ 70.0191  │   62    │    '±7.14%'     │ 0.2275 │                                         │
+│       use two number arguments everywhere       │ 59.8509  │   53    │    '±5.69%'     │ 0.1945 │                                         │
+│                   use BigInt                    │ 57.6093  │   51    │    '±9.14%'     │ 0.1872 │                                         │
+│          use low/high array [u32, u32]          │ 37.4102  │   49    │    '±6.52%'     │ 0.1215 │                                         │
+│                 use Uint32Array                 │  36.61   │   49    │    '±4.82%'     │ 0.1189 │                                         │
+│    use low/high object {low: u32, high: u32}    │ 34.7259  │   50    │    '±3.92%'     │ 0.1128 │                                         │
+│     use hex string (string stream): '0xff'      │ 32.5032  │   47    │    '±9.93%'     │ 0.1056 │ 'uses slow C++ stringstream and stoull' │
+│          use hex string (stoi): '0xff'          │ 29.9514  │   40    │    '±7.37%'     │ 0.0973 │    'uses std::to_string and stoull'     │
+│  use hex string (custom deserializer): '0xff'   │ 28.1802  │   38    │    '±9.92%'     │ 0.0916 │   'uses custom hex parser and stoull'   │
+│     use Napi::External as an 8-byte buffer      │  23.334  │   42    │    '±4.75%'     │ 0.0758 │        'has to use a custom map'        │
+│      use 64-bit number as an 8-byte buffer      │ 21.2934  │   45    │    '±11.05%'    │ 0.0692 │        'has to use a custom map'        │
+└─────────────────────────────────────────────────┴──────────┴─────────┴─────────────────┴────────┴─────────────────────────────────────────┘
 ```
+
+## iTwin TypedId64 Format
+
+- In a string:
+  - optimized:
+    - stores 2 bytes of briefcase id
+    - stores 2 bytes of class id
+    - stores 4 bytes of element id
+  - de-optimized
+    - stores 8 bytes of class id
+    - stores 3 bytes of briefcaseid
+    - stores 5 bytes of element id
+
+## iTwin non typed Id64 Format
+
+In JavaScript we could just use a regular number up until the the 53-bit mark. That leaves us
+13 bits of space for the briefcase id.

@@ -10,7 +10,7 @@ try {
 export enum Id64ArgKind {
   LowHighObject = 0,
   LowHighArray = 1,
-  HexString = 2,
+  HexStringStringStream = 2,
   Base64String = 3,
   ByteString = 4,
   TwoNumbers = 5,
@@ -20,6 +20,8 @@ export enum Id64ArgKind {
   External = 9,
   HalfByteString = 10,
   // TODO: BigInt64Array
+  HexStringCustom = 11,
+  HexStringStoi = 12,
 }
 
 /** unique type to represent Napi::External object */
@@ -29,7 +31,7 @@ type NapiExternal = typeof NapiExternal;
 export namespace Id64Args {
   export type LowHighObject = [{ low: number, high: number }, void];
   export type LowHighArray = [[ low: number, high: number ], void];
-  export type HexString = [string, void];
+  export type HexStringStringStream = [string, void];
   export type Base64String = [string, void];
   export type ByteString = [string, void];
   export type TwoNumbers = [number, number];
@@ -38,12 +40,14 @@ export namespace Id64Args {
   export type BigInt = [bigint, void];
   export type External = [NapiExternal, void];
   export type HalfByteString = [string, void];
+  export type HexStringCustom = [string, void];
+  export type HexStringStoi = [string, void];
 }
 
 export type Id64Arg =
   | Id64Args.LowHighObject
   | Id64Args.LowHighArray
-  | Id64Args.HexString
+  | Id64Args.HexStringStringStream
   | Id64Args.Base64String
   | Id64Args.ByteString
   | Id64Args.TwoNumbers
@@ -52,12 +56,14 @@ export type Id64Arg =
   | Id64Args.BigInt
   | Id64Args.External
   | Id64Args.HalfByteString
+  | Id64Args.HexStringCustom
+  | Id64Args.HexStringStoi
 ;
 
 export type IdArgsFor<Kind> =
   Kind extends Id64ArgKind.LowHighObject ? Id64Args.LowHighObject
   : Kind extends Id64ArgKind.LowHighArray ? Id64Args.LowHighArray
-  : Kind extends Id64ArgKind.HexString ? Id64Args.HexString
+  : Kind extends Id64ArgKind.HexStringStringStream ? Id64Args.HexStringStringStream
   : Kind extends Id64ArgKind.Base64String ? Id64Args.Base64String
   : Kind extends Id64ArgKind.ByteString ? Id64Args.ByteString
   : Kind extends Id64ArgKind.TwoNumbers ? Id64Args.TwoNumbers
@@ -66,6 +72,8 @@ export type IdArgsFor<Kind> =
   : Kind extends Id64ArgKind.BigInt ? Id64Args.BigInt
   : Kind extends Id64ArgKind.External ? Id64Args.External
   : Kind extends Id64ArgKind.HalfByteString ? Id64Args.HalfByteString
+  : Kind extends Id64ArgKind.HexStringCustom ? Id64Args.HexStringCustom
+  : Kind extends Id64ArgKind.HexStringStoi ? Id64Args.HexStringStoi
   //: Kind extends Id64ArgKind ? Id64Arg
   : never;
 ;
@@ -78,7 +86,7 @@ export type MaybeHighBitArray<T extends Id64Arg> = T extends Id64Args.TwoNumbers
 export const getNeighbors: {
   (kind: Id64ArgKind.LowHighObject,  ...id: Id64Args.LowHighObject):  MaybeHighBitArray<Id64Args.LowHighObject>;
   (kind: Id64ArgKind.LowHighArray,   ...id: Id64Args.LowHighArray):   MaybeHighBitArray<Id64Args.LowHighArray>;
-  (kind: Id64ArgKind.HexString,      ...id: Id64Args.HexString):      MaybeHighBitArray<Id64Args.HexString>;
+  (kind: Id64ArgKind.HexStringStringStream,      ...id: Id64Args.HexStringStringStream):      MaybeHighBitArray<Id64Args.HexStringStringStream>;
   (kind: Id64ArgKind.Base64String,   ...id: Id64Args.Base64String):   MaybeHighBitArray<Id64Args.Base64String>;
   (kind: Id64ArgKind.ByteString,     ...id: Id64Args.ByteString):     MaybeHighBitArray<Id64Args.ByteString>;
   (kind: Id64ArgKind.TwoNumbers,     ...id: Id64Args.TwoNumbers):     MaybeHighBitArray<Id64Args.TwoNumbers>;
@@ -87,6 +95,8 @@ export const getNeighbors: {
   (kind: Id64ArgKind.BigInt,         ...id: Id64Args.BigInt):         MaybeHighBitArray<Id64Args.BigInt>;
   (kind: Id64ArgKind.External,       ...id: Id64Args.External):       MaybeHighBitArray<Id64Args.External>;
   (kind: Id64ArgKind.HalfByteString, ...id: Id64Args.HalfByteString): MaybeHighBitArray<Id64Args.HalfByteString>;
+  (kind: Id64ArgKind.HexStringCustom,...id: Id64Args.HexStringCustom):MaybeHighBitArray<Id64Args.HexStringCustom>;
+  (kind: Id64ArgKind.HexStringStoi,  ...id: Id64Args.HexStringStoi):  MaybeHighBitArray<Id64Args.HexStringStoi>;
   // generic case
   (kind: Id64ArgKind, ...id: Id64Arg): MaybeHighBitArray<Id64Arg>;
 } = nativeBindings.getNeighbors;
@@ -94,7 +104,7 @@ export const getNeighbors: {
 export const getNodes: {
   (kind: Id64ArgKind.LowHighObject ): MaybeHighBitArray<Id64Args.LowHighObject>;
   (kind: Id64ArgKind.LowHighArray  ): MaybeHighBitArray<Id64Args.LowHighArray>;
-  (kind: Id64ArgKind.HexString     ): MaybeHighBitArray<Id64Args.HexString>;
+  (kind: Id64ArgKind.HexStringStringStream     ): MaybeHighBitArray<Id64Args.HexStringStringStream>;
   (kind: Id64ArgKind.Base64String  ): MaybeHighBitArray<Id64Args.Base64String>;
   (kind: Id64ArgKind.ByteString    ): MaybeHighBitArray<Id64Args.ByteString>;
   (kind: Id64ArgKind.TwoNumbers    ): MaybeHighBitArray<Id64Args.TwoNumbers>;
@@ -103,6 +113,8 @@ export const getNodes: {
   (kind: Id64ArgKind.BigInt        ): MaybeHighBitArray<Id64Args.BigInt>;
   (kind: Id64ArgKind.External      ): MaybeHighBitArray<Id64Args.External>;
   (kind: Id64ArgKind.HalfByteString): MaybeHighBitArray<Id64Args.HalfByteString>;
+  (kind: Id64ArgKind.HexStringCustom     ): MaybeHighBitArray<Id64Args.HexStringCustom>;
+  (kind: Id64ArgKind.HexStringStoi     ): MaybeHighBitArray<Id64Args.HexStringStoi>;
   // generic case
   (kind: Id64ArgKind): MaybeHighBitArray<Id64Arg>;
 } = nativeBindings.getNodes;
@@ -129,7 +141,7 @@ export function doubleAsBufferEq(...[l, _lExtra, r, _rExtra]: [...Id64Args.Doubl
 export function eq(...[kind, l, lExtra, r, rExtra]:
   | [Id64ArgKind.LowHighObject, ...Id64Args.LowHighObject, ...Id64Args.LowHighObject]
   | [Id64ArgKind.LowHighArray,  ...Id64Args.LowHighArray, ...Id64Args.LowHighArray]
-  | [Id64ArgKind.HexString,     ...Id64Args.HexString, ...Id64Args.HexString]
+  | [Id64ArgKind.HexStringStringStream,     ...Id64Args.HexStringStringStream, ...Id64Args.HexStringStringStream]
   | [Id64ArgKind.Base64String,  ...Id64Args.Base64String, ...Id64Args.Base64String]
   | [Id64ArgKind.ByteString,    ...Id64Args.ByteString, ...Id64Args.ByteString]
   | [Id64ArgKind.TwoNumbers,    ...Id64Args.TwoNumbers, ...Id64Args.TwoNumbers]
@@ -138,6 +150,8 @@ export function eq(...[kind, l, lExtra, r, rExtra]:
   | [Id64ArgKind.BigInt,        ...Id64Args.BigInt, ...Id64Args.BigInt]
   | [Id64ArgKind.External,      ...Id64Args.External, ...Id64Args.External]
   | [Id64ArgKind.HalfByteString,...Id64Args.HalfByteString, ...Id64Args.HalfByteString]
+  | [Id64ArgKind.HexStringCustom,...Id64Args.HexStringCustom, ...Id64Args.HexStringCustom]
+  | [Id64ArgKind.HexStringStoi, ...Id64Args.HexStringStoi, ...Id64Args.HexStringStoi]
 ): boolean {
   switch (kind) {
     case Id64ArgKind.LowHighObject:
@@ -176,8 +190,8 @@ export const Id64LowHighObjectMap: { new<V>(): Id64NativeMap<Id64Args.LowHighObj
 export const Id64LowHighObjectSet: { new<V>(): Id64NativeSet<Id64Args.LowHighObject, V> } = nativeBindings.Id64LowHighObjectSet;
 export const Id64LowHighArrayMap: { new<V>(): Id64NativeMap<Id64Args.LowHighArray, V> } = nativeBindings.Id64LowHighArrayMap;
 export const Id64LowHighArraySet: { new<V>(): Id64NativeSet<Id64Args.LowHighArray, V> } = nativeBindings.Id64LowHighArraySet;
-export const Id64HexStringMap: { new<V>(): Id64NativeMap<Id64Args.HexString, V> } = nativeBindings.Id64HexStringMap;
-export const Id64HexStringSet: { new<V>(): Id64NativeSet<Id64Args.HexString, V> } = nativeBindings.Id64HexStringSet;
+export const Id64HexStringStringStreamMap: { new<V>(): Id64NativeMap<Id64Args.HexStringStringStream, V> } = nativeBindings.Id64HexStringStringStreamMap;
+export const Id64HexStringStringStreamSet: { new<V>(): Id64NativeSet<Id64Args.HexStringStringStream, V> } = nativeBindings.Id64HexStringStringStreamSet;
 export const Id64Base64StringMap: { new<V>(): Id64NativeMap<Id64Args.Base64String, V> } = nativeBindings.Id64Base64StringMap;
 export const Id64Base64StringSet: { new<V>(): Id64NativeSet<Id64Args.Base64String, V> } = nativeBindings.Id64Base64StringSet;
 export const Id64ByteStringMap: { new<V>(): Id64NativeMap<Id64Args.ByteString, V> } = nativeBindings.Id64ByteStringMap;
@@ -194,6 +208,10 @@ export const Id64ExternalMap: { new<V>(): Id64NativeMap<Id64Args.External, V> } 
 export const Id64ExternalSet: { new<V>(): Id64NativeSet<Id64Args.External, V> } = nativeBindings.Id64ExternalSet;
 export const Id64HalfByteStringMap: { new<V>(): Id64NativeMap<Id64Args.HalfByteString, V> } = nativeBindings.Id64HalfByteStringMap;
 export const Id64HalfByteStringSet: { new<V>(): Id64NativeSet<Id64Args.HalfByteString, V> } = nativeBindings.Id64HalfByteStringSet;
+export const Id64HexStringCustomMap: { new<V>(): Id64NativeMap<Id64Args.HexStringCustom, V> } = nativeBindings.Id64HexStringCustomMap;
+export const Id64HexStringCustomSet: { new<V>(): Id64NativeSet<Id64Args.HexStringCustom, V> } = nativeBindings.Id64HexStringCustomSet;
+export const Id64HexStringStoiMap: { new<V>(): Id64NativeMap<Id64Args.HexStringStoi, V> } = nativeBindings.Id64HexStringStoiMap;
+export const Id64HexStringStoiSet: { new<V>(): Id64NativeSet<Id64Args.HexStringStoi, V> } = nativeBindings.Id64HexStringStoiSet;
 
 export const convert: {
   // generic case (untyped right now since only exposing for REPL usage)

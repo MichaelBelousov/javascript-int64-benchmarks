@@ -22,7 +22,7 @@ function djikstras(
   kind:
   | Id64ArgKind.LowHighObject
   | Id64ArgKind.LowHighArray
-  | Id64ArgKind.HexString
+  | Id64ArgKind.HexStringStringStream
   | Id64ArgKind.Base64String
   | Id64ArgKind.ByteString
   | Id64ArgKind.TwoNumbers
@@ -31,6 +31,8 @@ function djikstras(
   | Id64ArgKind.BigInt
   | Id64ArgKind.External
   | Id64ArgKind.HalfByteString
+  | Id64ArgKind.HexStringCustom
+  | Id64ArgKind.HexStringStoi
 ) {
   type Kind =  typeof kind;
   type Type = IdArgsFor<Kind>;
@@ -96,10 +98,20 @@ suite
   .add("use low/high array [u32, u32]", function() {
     djikstras(Id64ArgKind.LowHighArray);
   })
-  .add("use hex string: '0xff'", function() {
-    djikstras(Id64ArgKind.HexString);
+  .add("use hex string (string stream): '0xff'", function() {
+    djikstras(Id64ArgKind.HexStringStringStream);
   }, {
-    note: "uses slow C++ stringstream"
+    note: "uses slow C++ stringstream and stoull"
+  })
+  .add("use hex string (custom deserializer): '0xff'", function() {
+    djikstras(Id64ArgKind.HexStringStringStream);
+  }, {
+    note: "uses custom hex parser and stoull"
+  })
+  .add("use hex string (stoi): '0xff'", function() {
+    djikstras(Id64ArgKind.HexStringStringStream);
+  }, {
+    note: "uses std::to_string and stoull"
   })
   // not implemented
   //.add("use unprefixed hex string: 'ff'", function() {})

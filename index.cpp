@@ -146,7 +146,7 @@ namespace Int64Converters {
   enum struct Kind {
     LowHighObject = 0,
     LowHighArray = 1,
-    HexString = 2,
+    HexStringStringStream = 2,
     Base64String = 3,
     ByteString = 4,
     TwoNumbers = 5,
@@ -155,6 +155,8 @@ namespace Int64Converters {
     BigInt = 8,
     External = 9,
     HalfByteString = 10,
+    HexStringCustom = 11,
+    HexStringStoi = 12,
   };
 
   namespace From {
@@ -174,7 +176,7 @@ namespace Int64Converters {
       return value;
     }
     // ("0x0") => "0x0"
-    auto HexString(const Napi::Value& jsVal, const Napi::Value&) -> NodeId {
+    auto HexStringStringStream(const Napi::Value& jsVal, const Napi::Value&) -> NodeId {
       const std::string&& arg1 = jsVal.As<Napi::String>().Utf8Value();
       const NodeId value = std::stoull(arg1.data(), nullptr, 16);
       return value;
@@ -238,10 +240,41 @@ namespace Int64Converters {
       return value;
     }
 
+    // ("0x0") => "0x0"
+    auto HexStringCustom(const Napi::Value& jsVal, const Napi::Value&) -> NodeId {
+      const std::string&& arg1 = jsVal.As<Napi::String>().Utf8Value();
+      NodeId value = 0;
+      for (auto ci = arg1.begin() + 2; ci <= arg1.end(); ++ci) {
+        uint64_t hexit;
+        const char c = *ci;
+        if (isdigit(c))
+          hexit = c - '0';
+        else
+          {
+          if (c >= 'A' && c <= 'F')
+            hexit = 10 + (c - 'A');
+          else if (c >= 'a' && c <= 'f')
+            hexit = 10 + (c - 'a');
+          else
+            return 0;
+          }
+        value <<= 4;
+        value += hexit;
+      }
+      return value;
+    }
+
+    // ("0x0") => "0x0"
+    auto HexStringStoi(const Napi::Value& jsVal, const Napi::Value&) -> NodeId {
+      const std::string&& arg1 = jsVal.As<Napi::String>().Utf8Value();
+      const NodeId value = std::stoull(arg1.data(), nullptr, 16);
+      return value;
+    }
+
     static auto map = std::array{
       LowHighObject,
       LowHighArray,
-      HexString,
+      HexStringStringStream,
       Base64String,
       ByteString,
       TwoNumbers,
@@ -250,6 +283,8 @@ namespace Int64Converters {
       BigInt,
       External,
       HalfByteString,
+      HexStringCustom,
+      HexStringStoi,
     };
   };
 
@@ -269,7 +304,7 @@ namespace Int64Converters {
       return jsVal;
     }
     // ("0x0") => "0x0"
-    auto HexString(Napi::Env env, uint64_t val) -> Napi::Value {
+    auto HexStringStringStream(Napi::Env env, uint64_t val) -> Napi::Value {
       std::stringstream buffer;
       std::hex(buffer); // maybe sprintf is faster?
       buffer << "0x" << val;
@@ -334,11 +369,23 @@ namespace Int64Converters {
       return Napi::String::New(env, buffer, buffSize);
     }
 
+    // ("0x0") => "0x0"
+    auto HexStringCustom(Napi::Env env, uint64_t val) -> Napi::Value {
+      const auto jsVal = Napi::String::New(env, std::to_string(val));
+      return jsVal;
+    }
+
+    // ("0x0") => "0x0"
+    auto HexStringStoi(Napi::Env env, uint64_t val) -> Napi::Value {
+      const auto jsVal = Napi::String::New(env, std::to_string(val));
+      return jsVal;
+    }
+
     // must be same order as enum
     static auto map = std::array{
       LowHighObject,
       LowHighArray,
-      HexString,
+      HexStringStringStream,
       Base64String,
       ByteString,
       TwoNumbers,
@@ -347,6 +394,8 @@ namespace Int64Converters {
       BigInt,
       External,
       HalfByteString,
+      HexStringCustom,
+      HexStringStoi,
     };
   };
 };
@@ -519,8 +568,8 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   exports["Id64LowHighObjectSet"] = Id64Set<Int64Converters::From::LowHighObject, Int64Converters::To::LowHighObject>::Init(env);
   exports["Id64LowHighArrayMap"] = Id64Map<Int64Converters::From::LowHighArray, Int64Converters::To::LowHighArray>::Init(env);
   exports["Id64LowHighArraySet"] = Id64Set<Int64Converters::From::LowHighArray, Int64Converters::To::LowHighArray>::Init(env);
-  exports["Id64HexStringMap"] = Id64Map<Int64Converters::From::HexString, Int64Converters::To::HexString>::Init(env);
-  exports["Id64HexStringSet"] = Id64Set<Int64Converters::From::HexString, Int64Converters::To::HexString>::Init(env);
+  exports["Id64HexStringStringStreamMap"] = Id64Map<Int64Converters::From::HexStringStringStream, Int64Converters::To::HexStringStringStream>::Init(env);
+  exports["Id64HexStringStringStreamSet"] = Id64Set<Int64Converters::From::HexStringStringStream, Int64Converters::To::HexStringStringStream>::Init(env);
   exports["Id64Base64StringMap"] = Id64Map<Int64Converters::From::Base64String, Int64Converters::To::Base64String>::Init(env);
   exports["Id64Base64StringSet"] = Id64Set<Int64Converters::From::Base64String, Int64Converters::To::Base64String>::Init(env);
   exports["Id64ByteStringMap"] = Id64Map<Int64Converters::From::ByteString, Int64Converters::To::ByteString>::Init(env);
@@ -537,6 +586,10 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   exports["Id64ExternalSet"] = Id64Set<Int64Converters::From::External, Int64Converters::To::External>::Init(env);
   exports["Id64HalfByteStringMap"] = Id64Map<Int64Converters::From::HalfByteString, Int64Converters::To::HalfByteString>::Init(env);
   exports["Id64HalfByteStringSet"] = Id64Set<Int64Converters::From::HalfByteString, Int64Converters::To::HalfByteString>::Init(env);
+  exports["Id64HexStringCustomMap"] = Id64Map<Int64Converters::From::HexStringCustom, Int64Converters::To::HexStringCustom>::Init(env);
+  exports["Id64HexStringCustomSet"] = Id64Set<Int64Converters::From::HexStringCustom, Int64Converters::To::HexStringCustom>::Init(env);
+  exports["Id64HexStringStoiMap"] = Id64Map<Int64Converters::From::HexStringStoi, Int64Converters::To::HexStringStoi>::Init(env);
+  exports["Id64HexStringStoiSet"] = Id64Set<Int64Converters::From::HexStringStoi, Int64Converters::To::HexStringStoi>::Init(env);
 
   return exports;
 }

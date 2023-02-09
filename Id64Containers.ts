@@ -8,7 +8,7 @@ export interface Id64Map<K extends Id64Arg, V> /* extends Pick<Map<K, V>, "get" 
 
 export function MakeIdMapClass<V>(kind: Id64ArgKind.LowHighObject ): new() => Id64Map<Id64Args.LowHighObject,   V>;
 export function MakeIdMapClass<V>(kind: Id64ArgKind.LowHighArray  ): new() => Id64Map<Id64Args.LowHighArray,    V>;
-export function MakeIdMapClass<V>(kind: Id64ArgKind.HexString     ): new() => Id64Map<Id64Args.HexString,       V>;
+export function MakeIdMapClass<V>(kind: Id64ArgKind.HexStringStringStream     ): new() => Id64Map<Id64Args.HexStringStringStream,       V>;
 export function MakeIdMapClass<V>(kind: Id64ArgKind.Base64String  ): new() => Id64Map<Id64Args.Base64String,    V>;
 export function MakeIdMapClass<V>(kind: Id64ArgKind.ByteString    ): new() => Id64Map<Id64Args.ByteString,      V>;
 export function MakeIdMapClass<V>(kind: Id64ArgKind.TwoNumbers    ): new() => Id64Map<Id64Args.TwoNumbers,      V>
@@ -64,7 +64,9 @@ export function MakeIdMapClass<V>(
           return this;
         }
       };
-    case Id64ArgKind.HexString:
+    case Id64ArgKind.HexStringStringStream:
+    case Id64ArgKind.HexStringCustom:
+    case Id64ArgKind.HexStringStoi:
     case Id64ArgKind.Base64String:
     case Id64ArgKind.ByteString:
     case Id64ArgKind.BigInt:
@@ -92,13 +94,15 @@ export interface Id64Set<K extends Id64Arg> /* extends Pick<Map<K, V>, "get" | "
 
 export function MakeIdSetClass<V>(kind: Id64ArgKind.LowHighObject ): new() => Id64Set<Id64Args.LowHighObject>;
 export function MakeIdSetClass<V>(kind: Id64ArgKind.LowHighArray  ): new() => Id64Set<Id64Args.LowHighArray>;
-export function MakeIdSetClass<V>(kind: Id64ArgKind.HexString     ): new() => Id64Set<Id64Args.HexString>;
+export function MakeIdSetClass<V>(kind: Id64ArgKind.HexStringStringStream): new() => Id64Set<Id64Args.HexStringStringStream>;
 export function MakeIdSetClass<V>(kind: Id64ArgKind.Base64String  ): new() => Id64Set<Id64Args.Base64String>;
 export function MakeIdSetClass<V>(kind: Id64ArgKind.ByteString    ): new() => Id64Set<Id64Args.ByteString>;
 export function MakeIdSetClass<V>(kind: Id64ArgKind.TwoNumbers    ): new() => Id64Set<Id64Args.TwoNumbers>;
 export function MakeIdSetClass<V>(kind: Id64ArgKind.Uint32Array   ): new() => Id64Set<Id64Args.Uint32Array>;
 export function MakeIdSetClass<V>(kind: Id64ArgKind.DoubleAsBuffer): new() => Id64Set<Id64Args.DoubleAsBuffer>;
 export function MakeIdSetClass<V>(kind: Id64ArgKind.BigInt        ): new() => Id64Set<Id64Args.BigInt>;
+export function MakeIdSetClass<V>(kind: Id64ArgKind.HexStringCustom): new() => Id64Set<Id64Args.HexStringCustom>;
+export function MakeIdSetClass<V>(kind: Id64ArgKind.HexStringStoi ): new() => Id64Set<Id64Args.HexStringStoi>;
 // overload for the generic case
 export function MakeIdSetClass<V>(kind: Id64ArgKind): new() => Id64Set<Id64Arg>;
 export function MakeIdSetClass<V>(
@@ -148,7 +152,9 @@ export function MakeIdSetClass<V>(
           return this;
         }
       }
-    case Id64ArgKind.HexString:
+    case Id64ArgKind.HexStringStringStream:
+    case Id64ArgKind.HexStringCustom:
+    case Id64ArgKind.HexStringStoi:
     case Id64ArgKind.Base64String:
     case Id64ArgKind.ByteString:
     case Id64ArgKind.BigInt:
