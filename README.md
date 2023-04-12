@@ -17,6 +17,9 @@ Goals are:
 
 ## Test notes
 
+- The test is to store a simple graph of randomly labeled (by 64-bit integer) nodes in the state of a C++ addon, then expose functions
+  to query for graph neighbors and other graph data for use by JavaScript. The benchmark loads that addon, initializes a graph randomly,
+  and measures how long it takes to generate the distances (djikstra's algorithm) between the first node and all others.
 - the Ids in the test are generated randomly (using `Math.random`), and may not represent the probable id space of a real target,
   perhaps the tests would be better using a normally distributed generator of random ids.
 
