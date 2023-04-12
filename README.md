@@ -15,9 +15,14 @@ Goals are:
 - measure performance of marshalling various JavaScript representations of Int64 through native bindings
 - use idiomatic code for storing Int64 in JavaScript values
 
-## The latest results
+## Test notes
 
-Last generated on my 6-core i7-8850H@2.60GHz on node v12.22.7
+- the Ids in the test are generated randomly (using `Math.random`), and may not represent the probable id space of a real target,
+  perhaps the tests would be better using a normally distributed generator of random ids.
+
+## latest results
+
+Last generated on my 6-core i7-8850H@2.60GHz, node version used below.
 
 ```results
 ran on linux-x64 on node v18.14.0
@@ -40,19 +45,8 @@ ran on linux-x64 on node v18.14.0
 └─────────────────────────────────────────────────┴──────────┴─────────┴─────────────────┴────────┴─────────────────────────────────────────┘
 ```
 
-## iTwin TypedId64 Format
+## Other potential test cases:
 
-- In a string:
-  - optimized:
-    - stores 2 bytes of briefcase id
-    - stores 2 bytes of class id
-    - stores 4 bytes of element id
-  - de-optimized
-    - stores 8 bytes of class id
-    - stores 3 bytes of briefcaseid
-    - stores 5 bytes of element id
+- use a JavaScript number if the 64 bit id is lower than `Number.MAX_SAFE_INTEGER` that should be, what, $2^53-1$ values (aka 13 bits of space on the most significant 24 bits),
+  and backout to another format if it doesn't fit? Might be faster on certain id spaces where large ids are unlikely.
 
-## iTwin non typed Id64 Format
-
-In JavaScript we could just use a regular number up until the the 53-bit mark. That leaves us
-13 bits of space for the briefcase id.
